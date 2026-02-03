@@ -1,10 +1,10 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
+import { Fredoka } from 'next/font/google'
 
-const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] })
+const fredoka = Fredoka({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
 
 export const metadata = {
-  title: 'Boomerang - Choose Your Token Reward',
+  title: 'Boomerang 🪃 - Your Fees Come Back!',
   description: 'Turn PumpFun fees into any token you want. The first bot that lets you select which token to buy and airdrop to holders.',
   keywords: 'solana, pumpfun, telegram bot, airdrop, crypto, defi, token redistribution',
 }
@@ -12,7 +12,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={fredoka.className}>
         {children}
       </body>
     </html>
