@@ -61,3 +61,13 @@ export function backToMenuKeyboard() {
     [Markup.button.callback('🏠 Back to Menu', 'menu')],
   ]);
 }
+
+/**
+ * Warning confirmation keyboard
+ */
+export function warningConfirmationKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('✅ I Understand, Continue', 'warning_accept')],
+    [Markup.button.callback('❌ Cancel Setup', 'warning_cancel')],
+  ]);
+}

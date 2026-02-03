@@ -32,6 +32,10 @@ export function initBot() {
     commands.handleIntervalSelection(ctx, interval);
   });
 
+  // Warning confirmation handlers
+  bot.action('warning_accept', commands.handleWarningAccept);
+  bot.action('warning_cancel', commands.handleWarningCancel);
+
   // Confirmation handlers
   bot.action('confirm_yes', (ctx) => commands.handleSetupConfirmation(ctx, true));
   bot.action('confirm_no', (ctx) => commands.handleSetupConfirmation(ctx, false));

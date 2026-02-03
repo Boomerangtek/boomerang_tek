@@ -86,23 +86,43 @@ export async function handleSetupStart(ctx) {
     return;
   }
 
-  // Initialize setup session
+  // Show warning message first
+  const warningMessage = `
+⚠️ *IMPORTANT WARNING - READ CAREFULLY* ⚠️
+
+*This setup is IRREVERSIBLE!*
+
+By providing your private key, you authorize this bot to:
+
+🔐 *Access your wallet* - The bot will have full access to execute transactions
+💰 *Claim PumpFun fees* - Automatically on your chosen schedule
+🔄 *Swap tokens* - Using Jupiter aggregator
+🎁 *Airdrop to holders* - Proportional distribution
+
+⚠️ *CRITICAL SECURITY WARNINGS:*
+
+❌ *DO NOT* use your main wallet
+❌ *DO NOT* use a wallet with large holdings
+✅ *DO* create a dedicated wallet just for this bot
+✅ *DO* only fund it with necessary amounts
+
+🛑 *ONCE ACTIVATED:*
+• The bot will run automatically every interval
+• Transactions cannot be reversed
+• You can /pause or /stop the bot anytime
+• To fully remove access, use /stop to delete the config
+
+*Do you understand and want to proceed?*
+  `;
+
+  // Initialize setup session with confirmation step
   setupSessions.set(telegramId, {
     userId: user.id,
-    step: 'private_key',
+    step: 'warning_confirmation',
     data: {},
   });
 
-  await ctx.reply(
-    '🔐 *Step 1/4: Private Key*\n\n' +
-    'Please send your dev wallet private key.\n\n' +
-    '⚠️ *Security:* Your key will be encrypted immediately and the message will be deleted.\n\n' +
-    '✅ Accepted formats:\n' +
-    '• Base58 string (recommended)\n' +
-    '• JSON array [1,2,3...]\n\n' +
-    'Example: `5J6m7n8p9q...` (base58)',
-    { parse_mode: 'Markdown', ...keyboards.cancelKeyboard() }
-  );
+  await ctx.replyWithMarkdown(warningMessage, keyboards.warningConfirmationKeyboard());
 }
 
 /**
@@ -462,6 +482,50 @@ export async function handleStop(ctx) {
     console.error('Error stopping bot:', error);
     await ctx.answerCbQuery('❌ Error stopping bot');
   }
+}
+
+/**
+ * Handle warning acceptance
+ */
+export async function handleWarningAccept(ctx) {
+  const telegramId = ctx.from.id;
+  const session = setupSessions.get(telegramId);
+
+  if (!session || session.step !== 'warning_confirmation') {
+    await ctx.answerCbQuery('Please start setup again with /setup');
+    return;
+  }
+
+  // Move to private key step
+  session.step = 'private_key';
+
+  await ctx.editMessageText(
+    '🔐 *Step 1/4: Private Key*\n\n' +
+    'Please send your dev wallet private key.\n\n' +
+    '⚠️ *Security:* Your key will be encrypted immediately and the message will be deleted.\n\n' +
+    '✅ Accepted formats:\n' +
+    '• Base58 string (recommended)\n' +
+    '• JSON array [1,2,3...]\n\n' +
+    'Example: `5J6m7n8p9q...` (base58)',
+    { parse_mode: 'Markdown', ...keyboards.cancelKeyboard() }
+  );
+
+  await ctx.answerCbQuery('✅ Proceeding with setup');
+}
+
+/**
+ * Handle warning cancellation
+ */
+export async function handleWarningCancel(ctx) {
+  const telegramId = ctx.from.id;
+  setupSessions.delete(telegramId);
+
+  await ctx.answerCbQuery('Setup cancelled');
+  await ctx.editMessageText(
+    '❌ Setup cancelled.\n\n' +
+    'You can start again anytime with /setup when you\'re ready.',
+    keyboards.mainMenuKeyboard()
+  );
 }
 
 /**
