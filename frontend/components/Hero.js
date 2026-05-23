@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Arrow } from './Icons';
 import CopyCA from './CopyCA';
@@ -17,6 +18,52 @@ const COINS = [
 export default function Hero() {
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'boomerangtekbot';
   const telegramUrl = `https://t.me/${botUsername}`;
+
+  const [thrown, setThrown] = useState(false);
+  const spinnerRef = useRef(null);
+  const hovering = useRef(false);
+  const throwing = useRef(false);
+  const vel = useRef(0); // deg per frame
+  const rot = useRef(0);
+
+  // Spin starts slow and accelerates the longer you hover; eases back when you
+  // leave. A throw forces a fast spin for the duration of the flight.
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const HOVER_CAP = 13; // max deg/frame while hovering
+    const THROW_CAP = 26; // max deg/frame mid-throw
+    const ACCEL = 0.16; // ramp-up per frame
+    const FRICTION = 0.95; // decay per frame when idle
+    let raf;
+    const loop = () => {
+      const active = hovering.current || throwing.current;
+      const cap = throwing.current ? THROW_CAP : HOVER_CAP;
+      if (active) {
+        vel.current = Math.min(cap, vel.current + ACCEL);
+      } else {
+        vel.current *= FRICTION;
+        if (vel.current < 0.02) vel.current = 0;
+      }
+      rot.current += vel.current;
+      if (spinnerRef.current) {
+        spinnerRef.current.style.transform = `rotate(${rot.current}deg)`;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const throwBoomerang = () => {
+    if (thrown) return;
+    setThrown(true);
+    throwing.current = true;
+    vel.current = Math.max(vel.current, 16); // jump-start the spin
+    setTimeout(() => {
+      setThrown(false);
+      throwing.current = false;
+    }, 2200); // matches boomThrow duration
+  };
 
   return (
     <section className="relative overflow-hidden px-5 pt-10 sm:pt-14">
@@ -47,19 +94,20 @@ export default function Hero() {
           <div>
             <div className="chip mb-5">
               <span className="h-1.5 w-1.5 rounded-full bg-boom-500" />
-              The router for the bank coin meta
+              The reward layer for Solana
             </div>
 
             <h1 className="font-display text-5xl font-bold leading-[0.98] tracking-tight text-fg sm:text-6xl lg:text-7xl">
-              Reward your holders<br className="hidden sm:block" /> in{' '}
-              <span className="text-gradient">ANY token</span>.
+              Pay your holders<br className="hidden sm:block" /> in{' '}
+              <span className="text-gradient">anything</span>.
             </h1>
 
-            {/* Punchline vs the bank-coin meta */}
+            {/* Punchline — own the category, above the bank-coin meta */}
             <div className="mt-6 max-w-xl rounded-xl border border-line border-l-4 border-l-boom-400 bg-white p-4 shadow-soft">
               <p className="text-[15px] leading-relaxed text-mut">
-                Every bank coin pays in one asset.{' '}
-                <span className="font-semibold text-fg">Boomerang pays in all of them.</span>
+                PumpFun buys back in one asset.{' '}
+                <span className="font-semibold text-fg">Boomerang routes your fees into any token on Solana</span>{' '}
+                — and pays it straight to your holders. In one click.
               </p>
             </div>
 
@@ -70,6 +118,8 @@ export default function Hero() {
               <span className="rounded-full border border-line bg-white px-3 py-1 text-fg shadow-soft">Any token out</span>
               <Arrow className="h-4 w-4 text-boom-500" />
               <span className="rounded-full border border-line bg-white px-3 py-1 text-fg shadow-soft">Holders paid</span>
+              <span className="text-xs text-mut">or</span>
+              <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-orange-700 shadow-soft">🔥 Burned</span>
             </div>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -92,13 +142,29 @@ export default function Hero() {
             <div className="absolute inset-10 rounded-full bg-boom-300/30 blur-3xl" />
 
             <div className="boomerang-hero absolute inset-4">
-              <Image
-                src="/newlogopng.png"
-                alt="Boomerang"
-                fill
-                priority
-                className="object-contain drop-shadow-[0_18px_30px_rgba(16,24,40,0.18)]"
-              />
+              <button
+                type="button"
+                onClick={throwBoomerang}
+                onMouseEnter={() => (hovering.current = true)}
+                onMouseLeave={() => (hovering.current = false)}
+                onFocus={() => (hovering.current = true)}
+                onBlur={() => (hovering.current = false)}
+                aria-label="Throw the boomerang"
+                title="Throw me!"
+                className={`boom-throw relative block h-full w-full cursor-pointer ${
+                  thrown ? 'is-thrown' : ''
+                }`}
+              >
+                <div ref={spinnerRef} className="boom-spin relative h-full w-full">
+                  <Image
+                    src="/newlogopng.png"
+                    alt="Boomerang"
+                    fill
+                    priority
+                    className="object-contain drop-shadow-[0_18px_30px_rgba(16,24,40,0.18)]"
+                  />
+                </div>
+              </button>
             </div>
 
             {COINS.map(({ m, pos, size, delay }) => (

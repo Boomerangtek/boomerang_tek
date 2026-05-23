@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { X } from './Icons';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -16,6 +17,15 @@ export default function Footer() {
         </div>
 
         <div className="flex items-center gap-5 text-sm text-mut">
+          <a
+            href="https://x.com/Boomerang_tek"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Boomerang on X"
+            className="flex items-center transition hover:text-fg"
+          >
+            <X className="h-4 w-4" />
+          </a>
           <a href="https://jup.ag" target="_blank" rel="noopener noreferrer" className="transition hover:text-fg">
             Jupiter
           </a>

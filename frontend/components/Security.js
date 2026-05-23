@@ -10,8 +10,8 @@ const POINTS = [
   },
   {
     Icon: Shield,
-    title: 'Scoped to three actions',
-    body: 'The bot only claims fees, swaps via Jupiter, and airdrops to your holders. Nothing else runs against your wallet.',
+    title: 'Scoped to a few actions',
+    body: 'The bot only claims fees, swaps via Jupiter, and airdrops or burns. Nothing else runs against your wallet.',
     tile: 'bg-violet-100 text-violet-600',
     ring: 'hover:border-violet-300',
   },

@@ -88,6 +88,38 @@ body {
   .boomerang-hero { animation: none; }
 }
 
+/* Interactive hero boomerang: spins on hover, flies far + returns on click.
+   Nesting: .boomerang-hero (land/float) > .boom-throw (flight) > .boom-spin (rotation). */
+.boom-throw {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.boom-spin {
+  will-change: transform;
+}
+
+/* Click: shoot out far, loop around, and come home */
+@keyframes boomThrow {
+  0%   { transform: translate(0, 0) scale(1); }
+  18%  { transform: translate(46vw, -26vh) scale(0.55); }
+  38%  { transform: translate(90vw, 4vh) scale(0.28); }
+  55%  { transform: translate(58vw, 42vh) scale(0.42); }
+  74%  { transform: translate(-16vw, 24vh) scale(0.72); }
+  88%  { transform: translate(8vw, -8vh) scale(1.08); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+.boom-throw.is-thrown {
+  animation: boomThrow 2.2s cubic-bezier(0.45, 0.05, 0.4, 1) both;
+  z-index: 30;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boom-throw.is-thrown {
+    animation: none;
+  }
+}
+
 /* Token search: a boomerang sweeps across, then the answer is revealed */
 @keyframes boomerang-sweep {
   0% { left: -12%; transform: translateY(-50%) rotate(0deg); opacity: 0; }
@@ -104,6 +136,83 @@ body {
 }
 .reveal-pop {
   animation: reveal-pop 0.5s ease-out both;
+}
+
+/* ===== Why Boomerang: boomerangs fly a return loop and uncover the text ===== */
+/* The wrapper follows a Bézier flight path and banks along it; the inner
+   image spins fast on its own centre — like a real returning boomerang. */
+@keyframes wb-flight {
+  0%   { offset-distance: 0%; opacity: 0; }
+  7%   { opacity: 1; }
+  93%  { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+@keyframes wb-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.wb-boom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  offset-rotate: auto; /* bank into the curve */
+  opacity: 0;
+  will-change: offset-distance, opacity;
+  filter: drop-shadow(0 8px 14px rgba(16, 185, 129, 0.28));
+}
+.wb-boom .wb-spin {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: wb-spin 0.55s linear infinite;
+  animation-play-state: paused;
+}
+
+/* Big boomerang — wide return loop across the top, reveals the heading */
+.wb-boom--1 {
+  width: 66px;
+  height: 66px;
+  offset-path: path("M -90 300 C 150 335 320 55 565 70 C 815 85 1000 -25 1065 150 C 1115 305 875 325 635 302 C 415 281 215 360 15 332 C -70 320 -150 314 -200 300");
+  animation: wb-flight 3.3s cubic-bezier(0.45, 0.05, 0.35, 1) both;
+  animation-play-state: paused;
+}
+/* Smaller, deeper boomerang — lower arc, reveals the body copy */
+.wb-boom--2 {
+  width: 42px;
+  height: 42px;
+  opacity: 0;
+  offset-path: path("M -70 250 C 170 262 330 372 575 338 C 825 303 990 372 1100 252");
+  animation: wb-flight 2.7s 0.55s cubic-bezier(0.4, 0.1, 0.4, 1) both;
+  animation-play-state: paused;
+  filter: drop-shadow(0 6px 10px rgba(56, 189, 248, 0.25));
+}
+
+.wb-stage.in .wb-boom { animation-play-state: running; }
+.wb-stage.in .wb-boom .wb-spin { animation-play-state: running; }
+
+/* Text starts wiped from the left; the boomerang's pass uncovers it */
+.wb-reveal {
+  clip-path: inset(0 100% 0 0);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: clip-path 0.75s cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 0.6s ease, transform 0.75s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.wb-stage.in .wb-reveal {
+  clip-path: inset(0 0 0 0);
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-boom { display: none; }
+  .wb-reveal {
+    clip-path: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 /* Marquee */

@@ -9,7 +9,11 @@ const ITEMS = [
   },
   {
     q: 'What can the bot actually do with my wallet?',
-    a: 'Only three things: claim your PumpFun creator fees, swap that SOL into your chosen token via Jupiter, and airdrop it to your holders. It never moves funds anywhere else.',
+    a: 'Only a few scoped actions: claim your PumpFun creator fees, swap that SOL into your chosen token via Jupiter, and either airdrop it to your holders or burn it. It never moves funds anywhere else.',
+  },
+  {
+    q: 'Can it burn instead of airdropping?',
+    a: 'Yes. After the buyback you choose the destination: airdrop the bought tokens to holders, or burn them to permanently shrink supply — like a PumpFun buyback-and-burn, but in any token you pick. You set it per configuration.',
   },
   {
     q: 'Which token gets airdropped?',

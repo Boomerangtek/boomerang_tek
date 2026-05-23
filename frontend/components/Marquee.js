@@ -2,9 +2,10 @@
 
 const ITEMS = [
   'Your fees always come back',
-  'Claim → Buy → Airdrop',
+  'Claim → Buy → Airdrop or Burn',
   'Paid proportionally to holders',
   'Pick any reward token',
+  'Buy back & burn to shrink supply',
   'Runs every 1–60 minutes',
   'Built on Solana',
 ];

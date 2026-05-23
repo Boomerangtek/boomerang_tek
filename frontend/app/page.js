@@ -1,6 +1,7 @@
 import Marquee from '../components/Marquee'
 import Navigation from '../components/Navigation'
 import Hero from '../components/Hero'
+import WhyBoomerang from '../components/WhyBoomerang'
 import StatsBar from '../components/StatsBar'
 import TokenSearch from '../components/TokenSearch'
 import LiveFeed from '../components/LiveFeed'
@@ -21,6 +22,7 @@ export default function Home() {
       <Hero />
 
       <div className="mx-auto max-w-6xl space-y-20 px-5 py-20">
+        <WhyBoomerang />
         <Reveal><StatsBar /></Reveal>
         <Reveal><TokenSearch /></Reveal>
         <Reveal><HowItWorks /></Reveal>
@@ -34,7 +36,8 @@ export default function Home() {
               Tokens linking up and holders getting paid, in real time.
             </p>
             <p className="mt-3 text-xs leading-relaxed text-mut/70 italic">
-              Demo data for now — this feed will be wired to real on-chain activity soon.
+              Demo data for now — the moment tokens are linked, this feed switches to real
+              on-chain activity and this note disappears.
             </p>
           </div>
           <Reveal><LiveFeed /></Reveal>

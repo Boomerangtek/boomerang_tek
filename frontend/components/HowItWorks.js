@@ -3,7 +3,7 @@ import { Coins, Swap, Gift } from './Icons';
 const STEPS = [
   { n: '01', Icon: Coins, title: 'Claim your fees', body: 'Boomerang watches your PumpFun creator vault and auto-claims accrued SOL fees on the schedule you set.', tile: 'bg-boom-100 text-boom-600', ring: 'hover:border-boom-300' },
   { n: '02', Icon: Swap, title: 'Buy any token', body: 'It swaps that SOL into the token you pick — your coin, SOL, USDC, anything — at Jupiter best price.', tile: 'bg-sky-100 text-sky-600', ring: 'hover:border-sky-300' },
-  { n: '03', Icon: Gift, title: 'Airdrop to holders', body: 'Tokens are sent proportionally to your holders. The more they hold, the bigger their share.', tile: 'bg-amber-100 text-amber-600', ring: 'hover:border-amber-300' },
+  { n: '03', Icon: Gift, title: 'Airdrop or burn', body: 'Send the tokens to your holders proportionally — or burn them to shrink supply. Your call, every run.', tile: 'bg-amber-100 text-amber-600', ring: 'hover:border-amber-300' },
 ];
 
 export default function HowItWorks() {

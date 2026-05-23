@@ -94,6 +94,19 @@ export const Pause = (p) => (
   </svg>
 );
 
+export const Flame = (p) => (
+  <svg {...base} {...p}>
+    <path d="M12 3c1 3-1 4.5-2.5 6.5C8 11.5 7 13 7 15a5 5 0 0 0 10 0c0-2.2-1.2-4.2-3-6 .3 1.6-.4 2.6-1.3 3C12 11 11 9 12 3z" />
+  </svg>
+);
+
+// X (Twitter) — filled glyph, not a stroked line icon.
+export const X = (p) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...p}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
 export const Key = (p) => (
   <svg {...base} {...p}>
     <circle cx="8" cy="8" r="4" />

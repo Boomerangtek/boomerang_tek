@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Arrow } from './Icons';
+import { Arrow, X } from './Icons';
 import CopyCA from './CopyCA';
 
 export default function Navigation() {
@@ -42,6 +42,15 @@ export default function Navigation() {
           {/* Right */}
           <div className="flex items-center gap-3">
             <CopyCA className="hidden sm:inline-flex" />
+            <a
+              href="https://x.com/Boomerang_tek"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Boomerang on X"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-mut transition hover:text-fg"
+            >
+              <X className="h-[18px] w-[18px]" />
+            </a>
             <a href={`https://t.me/${botUsername}`} target="_blank" rel="noopener noreferrer" className="btn-primary">
               Launch bot
               <Arrow className="h-4 w-4" />
