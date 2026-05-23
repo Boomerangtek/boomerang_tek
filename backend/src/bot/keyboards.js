@@ -1,73 +1,122 @@
 import { Markup } from 'telegraf';
 
+const WEBSITE = process.env.WEBSITE_URL || 'https://boomerang.fun';
+
 /**
- * Main menu keyboard
+ * Home menu shown when the user has NO active configuration.
  */
-export function mainMenuKeyboard() {
+export function welcomeKeyboard() {
   return Markup.inlineKeyboard([
-    [Markup.button.callback('⚙️ Setup Bot', 'setup')],
-    [Markup.button.callback('📊 Status', 'status')],
-    [Markup.button.callback('⏸️ Pause', 'pause'), Markup.button.callback('▶️ Resume', 'resume')],
-    [Markup.button.callback('🛑 Stop Bot', 'stop')],
+    [Markup.button.callback('🚀 Set up Boomerang', 'setup')],
+    [Markup.button.callback('📖 How it works', 'how'), Markup.button.callback('❓ FAQ', 'faq')],
+    [Markup.button.url('🌐 Website', WEBSITE)],
+  ]);
+}
+
+/**
+ * Home menu shown when the user HAS a configuration.
+ * @param {Object} config - bot config row
+ */
+export function dashboardKeyboard(config) {
+  const toggle = config.is_active
+    ? Markup.button.callback('⏸️ Pause', 'pause')
+    : Markup.button.callback('▶️ Resume', 'resume');
+
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('📊 Status', 'status'), Markup.button.callback('⚡ Run now', 'runnow')],
+    [Markup.button.callback('⚙️ Settings', 'settings'), toggle],
     [Markup.button.callback('❓ Help', 'help')],
   ]);
 }
 
 /**
- * Interval selection keyboard
+ * Settings submenu.
  */
-export function intervalKeyboard() {
+export function settingsKeyboard(config) {
+  const toggle = config.is_active
+    ? Markup.button.callback('⏸️ Pause bot', 'pause')
+    : Markup.button.callback('▶️ Resume bot', 'resume');
+
   return Markup.inlineKeyboard([
-    [
-      Markup.button.callback('1 min', 'interval_1'),
-      Markup.button.callback('2 min', 'interval_2'),
-      Markup.button.callback('5 min', 'interval_5'),
-    ],
-    [
-      Markup.button.callback('10 min', 'interval_10'),
-      Markup.button.callback('30 min', 'interval_30'),
-      Markup.button.callback('60 min', 'interval_60'),
-    ],
-    [Markup.button.callback('❌ Cancel', 'cancel')],
+    [Markup.button.callback('⏱️ Change interval', 'change_interval')],
+    [Markup.button.callback('🎯 Change reward token', 'change_target')],
+    [toggle],
+    [Markup.button.callback('🗑️ Delete configuration', 'stop')],
+    [Markup.button.callback('⬅️ Back', 'menu')],
   ]);
 }
 
 /**
- * Confirmation keyboard
+ * Interval selection keyboard.
+ * @param {string} prefix - callback prefix ('interval' for setup, 'editint' for edit)
+ * @param {string} backAction - where the back/cancel button goes
+ */
+export function intervalKeyboard(prefix = 'interval', backAction = 'cancel') {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback('1 min', `${prefix}_1`),
+      Markup.button.callback('2 min', `${prefix}_2`),
+      Markup.button.callback('5 min', `${prefix}_5`),
+    ],
+    [
+      Markup.button.callback('10 min', `${prefix}_10`),
+      Markup.button.callback('30 min', `${prefix}_30`),
+      Markup.button.callback('60 min', `${prefix}_60`),
+    ],
+    [Markup.button.callback(backAction === 'cancel' ? '❌ Cancel' : '⬅️ Back', backAction)],
+  ]);
+}
+
+/**
+ * Setup confirmation keyboard.
  */
 export function confirmationKeyboard() {
   return Markup.inlineKeyboard([
-    [
-      Markup.button.callback('✅ Confirm', 'confirm_yes'),
-      Markup.button.callback('❌ Cancel', 'confirm_no'),
-    ],
+    [Markup.button.callback('✅ Activate bot', 'confirm_yes')],
+    [Markup.button.callback('❌ Cancel', 'confirm_no')],
   ]);
 }
 
 /**
- * Cancel keyboard
+ * Status screen actions.
+ */
+export function statusKeyboard(config) {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('🔄 Refresh', 'status'), Markup.button.callback('⚡ Run now', 'runnow')],
+    [Markup.button.callback('⚙️ Settings', 'settings'), Markup.button.callback('⬅️ Menu', 'menu')],
+  ]);
+}
+
+/**
+ * Cancel-only keyboard (used mid-input).
  */
 export function cancelKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('❌ Cancel Setup', 'cancel')],
-  ]);
+  return Markup.inlineKeyboard([[Markup.button.callback('❌ Cancel', 'cancel')]]);
 }
 
 /**
- * Back to menu keyboard
+ * Back to menu.
  */
 export function backToMenuKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.callback('🏠 Back to Menu', 'menu')],
-  ]);
+  return Markup.inlineKeyboard([[Markup.button.callback('⬅️ Back to menu', 'menu')]]);
 }
 
 /**
- * Warning confirmation keyboard
+ * Irreversible-setup warning confirmation.
  */
 export function warningConfirmationKeyboard() {
   return Markup.inlineKeyboard([
-    [Markup.button.callback('✅ I Understand, Continue', 'warning_accept')],
-    [Markup.button.callback('❌ Cancel Setup', 'warning_cancel')],
+    [Markup.button.callback('✅ I understand — continue', 'warning_accept')],
+    [Markup.button.callback('❌ Cancel', 'warning_cancel')],
+  ]);
+}
+
+/**
+ * Delete confirmation.
+ */
+export function deleteConfirmKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('🗑️ Yes, delete it', 'confirm_delete')],
+    [Markup.button.callback('⬅️ Keep it', 'menu')],
   ]);
 }

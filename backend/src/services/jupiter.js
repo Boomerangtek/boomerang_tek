@@ -1,4 +1,9 @@
 import { Connection, Keypair, VersionedTransaction, PublicKey } from '@solana/web3.js';
+import {
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from '@solana/spl-token';
 import axios from 'axios';
 import bs58 from 'bs58';
 import dotenv from 'dotenv';
@@ -10,6 +15,30 @@ const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
 
 // Native SOL mint address
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
+/**
+ * Read the SPL token balance of a wallet's associated token account.
+ * Returns 0n if the account does not exist yet.
+ * @param {PublicKey} owner - Wallet public key
+ * @param {string} mint - Token mint address
+ * @returns {Promise<bigint>} - Raw token balance
+ */
+async function getTokenBalance(owner, mint) {
+  try {
+    const ata = await getAssociatedTokenAddress(
+      new PublicKey(mint),
+      owner,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+    const balance = await connection.getTokenAccountBalance(ata);
+    return BigInt(balance.value.amount);
+  } catch (error) {
+    // Account does not exist / not yet created
+    return 0n;
+  }
+}
 
 /**
  * Get a quote for swapping tokens
@@ -80,24 +109,30 @@ export async function swapSolForToken(privateKey, outputMint, solAmount, slippag
     
     const outAmount = quote.outAmount;
     console.log(`📊 Quote received: ${outAmount} tokens (${quote.priceImpactPct}% price impact)`);
-    
+
+    // Snapshot the output token balance before the swap so we can measure
+    // the *actual* amount received (the quote is only an estimate; slippage
+    // means the real amount can be lower). Distributing on the quote risks
+    // trying to airdrop more tokens than we hold.
+    const balanceBefore = await getTokenBalance(wallet.publicKey, outputMint);
+
     // Get swap transaction
     const swapTransactionBuf = await getSwapTransaction(quote, wallet.publicKey.toString());
-    
+
     // Deserialize and sign transaction
     const transactionBuf = Buffer.from(swapTransactionBuf, 'base64');
     const transaction = VersionedTransaction.deserialize(transactionBuf);
     transaction.sign([wallet]);
-    
+
     // Send transaction
     const rawTransaction = transaction.serialize();
     const signature = await connection.sendRawTransaction(rawTransaction, {
       skipPreflight: true,
       maxRetries: 2,
     });
-    
+
     console.log(`📤 Transaction sent: ${signature}`);
-    
+
     // Confirm transaction
     const latestBlockhash = await connection.getLatestBlockhash();
     await connection.confirmTransaction({
@@ -105,13 +140,24 @@ export async function swapSolForToken(privateKey, outputMint, solAmount, slippag
       blockhash: latestBlockhash.blockhash,
       lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
     }, 'confirmed');
-    
+
     console.log(`✅ Swap confirmed: ${signature}`);
-    
+
+    // Measure the real amount received from the on-chain balance delta.
+    // Fall back to the quote if the delta can't be read for any reason.
+    const balanceAfter = await getTokenBalance(wallet.publicKey, outputMint);
+    const received = balanceAfter - balanceBefore;
+    const outputAmount = received > 0n ? received : BigInt(outAmount);
+
+    if (received !== BigInt(outAmount)) {
+      console.log(`📊 Actual received: ${received.toString()} (quote was ${outAmount})`);
+    }
+
     return {
       signature,
       inputAmount: solAmount,
-      outputAmount: BigInt(outAmount),
+      outputAmount,
+      quotedAmount: BigInt(outAmount),
       outputMint,
     };
   } catch (error) {

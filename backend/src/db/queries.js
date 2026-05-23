@@ -72,6 +72,28 @@ export async function updateBotConfigStatus(configId, isActive) {
   return result.rows[0];
 }
 
+export async function updateBotConfigInterval(configId, intervalMinutes) {
+  const query = `
+    UPDATE bot_configs
+    SET interval_minutes = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING *;
+  `;
+  const result = await pool.query(query, [intervalMinutes, configId]);
+  return result.rows[0];
+}
+
+export async function updateBotConfigTargetToken(configId, targetTokenAddress) {
+  const query = `
+    UPDATE bot_configs
+    SET target_token_address = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING *;
+  `;
+  const result = await pool.query(query, [targetTokenAddress, configId]);
+  return result.rows[0];
+}
+
 export async function updateLastExecution(configId) {
   const query = `
     UPDATE bot_configs 
@@ -237,6 +259,48 @@ export async function getTopRecipients(tokenAddress, limit = 10) {
     LIMIT $2
   `;
   const result = await pool.query(query, [tokenAddress, limit]);
+  return result.rows;
+}
+
+/**
+ * Global recent activity feed across all bots:
+ *  - 'paid'   → a successful execution (fees claimed, tokens airdropped)
+ *  - 'linked' → a new bot configuration was created
+ * Returns newest first.
+ */
+export async function getRecentActivity(limit = 20) {
+  const query = `
+    (
+      SELECT
+        'paid' AS type,
+        bc.source_token_address AS source_token,
+        bc.target_token_address AS target_token,
+        el.holder_count,
+        el.total_airdropped,
+        el.bought_token_amount,
+        el.claimed_sol_amount,
+        el.execution_time AS ts
+      FROM execution_logs el
+      JOIN bot_configs bc ON el.config_id = bc.id
+      WHERE el.status = 'success' AND el.holder_count > 0
+    )
+    UNION ALL
+    (
+      SELECT
+        'linked' AS type,
+        bc.source_token_address AS source_token,
+        bc.target_token_address AS target_token,
+        NULL::int AS holder_count,
+        NULL::bigint AS total_airdropped,
+        NULL::bigint AS bought_token_amount,
+        NULL::bigint AS claimed_sol_amount,
+        bc.created_at AS ts
+      FROM bot_configs bc
+    )
+    ORDER BY ts DESC
+    LIMIT $1;
+  `;
+  const result = await pool.query(query, [limit]);
   return result.rows;
 }
 

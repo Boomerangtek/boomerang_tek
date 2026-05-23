@@ -226,29 +226,46 @@ async function processBatch(wallet, mintPubkey, senderATA, batch, batchNumber) {
  * @returns {Array} - Array of {address, amount} distributions
  */
 export function calculateDistributions(holders, totalToDistribute, minAmount = 0n) {
+  const total = BigInt(totalToDistribute);
   const totalHoldings = holders.reduce((sum, h) => sum + BigInt(h.balance), 0n);
 
   if (totalHoldings === 0n) {
     throw new Error('Total holdings cannot be zero');
   }
 
-  const distributions = holders
+  // Pure integer math: amount = total * holderBalance / totalHoldings.
+  // Doing this with bigint avoids the precision loss of Number() on large
+  // token amounts (which silently rounds beyond 2^53).
+  let distributions = holders
     .map(holder => {
       const holderBalance = BigInt(holder.balance);
-      const proportion = Number(holderBalance) / Number(totalHoldings);
-      const amount = BigInt(Math.floor(Number(totalToDistribute) * proportion));
+      const amount = (total * holderBalance) / totalHoldings;
 
       return {
         address: holder.address,
-        holderBalance: holderBalance,
+        holderBalance,
         amount,
       };
     })
-    .filter(dist => dist.amount >= minAmount);
+    .filter(dist => dist.amount >= BigInt(minAmount));
+
+  // Integer division leaves a remainder (dust). Assign it to the largest
+  // holder so the full received amount is distributed and nothing is stranded
+  // in the dev wallet.
+  const allocated = distributions.reduce((sum, d) => sum + d.amount, 0n);
+  const remainder = total - allocated;
+  if (remainder > 0n && distributions.length > 0) {
+    let largest = distributions[0];
+    for (const dist of distributions) {
+      if (dist.holderBalance > largest.holderBalance) largest = dist;
+    }
+    largest.amount += remainder;
+  }
 
   console.log(`📊 Calculated ${distributions.length} distributions from ${holders.length} holders`);
-  console.log(`   Min amount: ${minAmount.toString()}`);
-  console.log(`   Total to distribute: ${totalToDistribute.toString()}`);
+  console.log(`   Min amount: ${BigInt(minAmount).toString()}`);
+  console.log(`   Total to distribute: ${total.toString()}`);
+  console.log(`   Remainder reassigned: ${remainder.toString()}`);
 
   return distributions;
 }
