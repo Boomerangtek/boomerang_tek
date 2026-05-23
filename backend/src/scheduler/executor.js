@@ -6,11 +6,22 @@ import { getTokenHolders } from '../services/birdeye.js';
 import { distributeTokens, calculateDistributions } from '../services/airdrop.js';
 import { sendNotification } from '../bot/telegram.js';
 
+// Tracks configs whose pipeline is currently running, so a cron tick that
+// fires while the previous run is still in flight is skipped rather than
+// double-claiming/double-swapping the same fees.
+const runningConfigs = new Set();
+
 /**
  * Execute bot configuration - claim fees, swap, and airdrop
  * @param {Object} config - Bot configuration from database
  */
 export async function executeBotConfig(config) {
+  if (runningConfigs.has(config.id)) {
+    console.log(`⏭️  Config ${config.id} is still running from a previous tick, skipping`);
+    return;
+  }
+  runningConfigs.add(config.id);
+
   console.log(`\n🚀 Executing bot for config ID: ${config.id}`);
   console.log(`   User ID: ${config.user_id}`);
   console.log(`   Interval: ${config.interval_minutes} minutes`);
@@ -44,12 +55,14 @@ export async function executeBotConfig(config) {
       return;
     }
 
-    executionLog.claimedSolAmount = feeBalance.toString();
-
     // Step 3: Claim fees
     console.log('💸 Claiming creator fees...');
     const claimSignature = await claimCreatorFees(privateKey);
     console.log(`   Claim TX: ${claimSignature}`);
+
+    // Only record the claimed amount once the claim tx has actually
+    // confirmed, so a failed claim isn't logged as a successful one.
+    executionLog.claimedSolAmount = feeBalance.toString();
 
     // Step 4: Calculate swap amount (keep 5% for transaction fees)
     const swapAmount = Number(feeBalance) * 0.95;
@@ -149,8 +162,9 @@ export async function executeBotConfig(config) {
 ✅ *Execution Complete!*
 
 💰 Claimed: ${(Number(feeBalance) / 1e9).toFixed(4)} SOL
-💱 Bought: ${airdropResults.totalSent.toString()} tokens
-👥 Airdropped to: ${airdropResults.successful.length}/${holders.length} holders
+💱 Bought: ${swapResult.outputAmount.toString()} tokens
+🎁 Airdropped: ${airdropResults.totalSent.toString()} tokens
+👥 Recipients: ${airdropResults.successful.length}/${holders.length} holders
 ⏰ Next run: ${config.interval_minutes} minutes
 
 ${airdropResults.failed.length > 0 ? `⚠️ ${airdropResults.failed.length} transfers failed` : ''}
@@ -181,6 +195,8 @@ Please check your configuration or contact support.
     `;
 
     await notifyUser(config.user_id, errorMessage);
+  } finally {
+    runningConfigs.delete(config.id);
   }
 }
 

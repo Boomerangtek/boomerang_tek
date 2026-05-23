@@ -17,12 +17,12 @@ const CACHE_TTL = 60000; // 1 minute cache
  * @param {number} limit - Maximum number of holders to fetch
  * @returns {Promise<Array>} - Array of holder objects
  */
-export async function getTokenHolders(tokenAddress, minBalance = 0, limit = 1000) {
+export async function getTokenHolders(tokenAddress, minBalance = 0, pageSize = 1000) {
   try {
     // Check cache first
     const cacheKey = `${tokenAddress}-${minBalance}`;
     const cached = holderCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       console.log(`📦 Using cached holder data for ${tokenAddress}`);
       return cached.data;
@@ -30,26 +30,45 @@ export async function getTokenHolders(tokenAddress, minBalance = 0, limit = 1000
 
     console.log(`🔍 Fetching token holders for ${tokenAddress}...`);
 
-    const response = await axios.get(
-      `${BIRDEYE_API_URL}/v1/token/holder`,
-      {
-        params: {
-          address: tokenAddress,
-          offset: 0,
-          limit,
-        },
-        headers: {
-          'X-API-KEY': API_KEY,
-          'Accept': 'application/json',
-        },
-      }
-    );
+    // Page through all holders. Birdeye returns at most `pageSize` items per
+    // request, so a single call silently truncates large holder sets. Keep
+    // requesting pages until a short page signals the end.
+    const rawHolders = [];
+    let offset = 0;
 
-    if (!response.data || !response.data.data) {
-      throw new Error('Invalid response from Birdeye API');
+    // Safety cap to avoid an unbounded loop if the API misbehaves.
+    const MAX_HOLDERS = 100000;
+
+    while (offset < MAX_HOLDERS) {
+      const response = await axios.get(
+        `${BIRDEYE_API_URL}/v1/token/holder`,
+        {
+          params: {
+            address: tokenAddress,
+            offset,
+            limit: pageSize,
+          },
+          headers: {
+            'X-API-KEY': API_KEY,
+            'Accept': 'application/json',
+          },
+        }
+      );
+
+      if (!response.data || !response.data.data) {
+        throw new Error('Invalid response from Birdeye API');
+      }
+
+      const items = response.data.data.items || [];
+      rawHolders.push(...items);
+
+      if (items.length < pageSize) {
+        break; // Last page reached
+      }
+      offset += pageSize;
     }
 
-    const holders = response.data.data.items
+    const holders = rawHolders
       .filter(holder => {
         // Filter by minimum balance
         const balance = BigInt(holder.amount || 0);
@@ -62,7 +81,7 @@ export async function getTokenHolders(tokenAddress, minBalance = 0, limit = 1000
         share: holder.share || 0, // Percentage share
       }));
 
-    console.log(`✅ Found ${holders.length} holders (filtered by min balance)`);
+    console.log(`✅ Found ${holders.length} holders (filtered by min balance, ${rawHolders.length} total fetched)`);
 
     // Cache the result
     holderCache.set(cacheKey, {

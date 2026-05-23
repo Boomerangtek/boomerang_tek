@@ -4,6 +4,16 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import PerformanceChart from '../../components/PerformanceChart';
+import Navigation from '../../components/Navigation';
+import Footer from '../../components/Footer';
+import { Coins, Bolt, Swap, Gift, Arrow } from '../../components/Icons';
+
+function shortenAddress(a) {
+  return a ? `${a.slice(0, 4)}…${a.slice(-4)}` : '';
+}
+function formatNumber(n) {
+  return new Intl.NumberFormat('en-US').format(n || 0);
+}
 
 export default function TokenDashboard() {
   const params = useParams();
@@ -11,89 +21,33 @@ export default function TokenDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [tokenMetadata, setTokenMetadata] = useState({ source: null, target: null });
   const [timeRange, setTimeRange] = useState('1m');
 
   useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const response = await fetch(`${apiUrl}/api/dashboard/${tokenAddress}`);
+        if (!response.ok) throw new Error('Token not found or not active');
+        setData(await response.json());
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    }
     fetchDashboardData();
-    
-    // Poll for updates every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, [tokenAddress]);
 
-  async function fetchDashboardData() {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      const response = await fetch(`${apiUrl}/api/dashboard/${tokenAddress}`);
-      
-      if (!response.ok) {
-        throw new Error('Token not found or not active');
-      }
-      
-      const dashboardData = await response.json();
-      setData(dashboardData);
-
-      // Fetch token metadata from Birdeye
-      fetchTokenMetadata(dashboardData.sourceToken.address, dashboardData.targetToken.address);
-      
-      setLoading(false);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
-  }
-
-  async function fetchTokenMetadata(sourceAddress, targetAddress) {
-    try {
-      // Fetch metadata for both tokens
-      const [sourceMeta, targetMeta] = await Promise.all([
-        fetchBirdeyeMetadata(sourceAddress),
-        fetchBirdeyeMetadata(targetAddress),
-      ]);
-
-      setTokenMetadata({
-        source: sourceMeta,
-        target: targetMeta,
-      });
-    } catch (err) {
-      console.error('Error fetching token metadata:', err);
-    }
-  }
-
-  async function fetchBirdeyeMetadata(address) {
-    try {
-      // In production, you'd fetch from Birdeye API
-      // For now, return simplified data
-      return {
-        name: 'Token',
-        symbol: shortenAddress(address).toUpperCase(),
-        logo: null,
-      };
-    } catch (err) {
-      return {
-        name: 'Unknown',
-        symbol: 'TKN',
-        logo: null,
-      };
-    }
-  }
-
-  function shortenAddress(address) {
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
-  }
-
-  function formatNumber(num) {
-    return new Intl.NumberFormat('en-US').format(num);
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-blue-50">
-        <div className="text-center bg-white rounded-2xl p-12 shadow-lg border border-gray-200">
-          <div className="animate-spin text-6xl mb-4">🪃</div>
-          <p className="text-lg font-semibold text-gray-700">Loading dashboard...</p>
-          <p className="text-sm text-gray-500 mt-2">Fetching live data</p>
+      <div className="flex min-h-screen items-center justify-center px-5">
+        <div className="panel px-10 py-12 text-center">
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-line border-t-boom-400" />
+          <p className="text-sm font-medium text-fg">Loading dashboard…</p>
+          <p className="mt-1 text-xs text-mut">Fetching live data</p>
         </div>
       </div>
     );
@@ -101,112 +55,81 @@ export default function TokenDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-blue-50">
-        <div className="bg-white rounded-2xl p-12 shadow-lg border border-gray-200 max-w-md text-center">
-          <div className="text-6xl mb-4">🔍</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Token Not Found</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <p className="text-sm text-gray-500 mb-6">
-            This token doesn't have an active Boomerang configuration yet.
+      <div className="flex min-h-screen items-center justify-center px-5">
+        <div className="panel max-w-md px-8 py-10 text-center">
+          <h1 className="font-display text-xl font-semibold text-fg">Token not found</h1>
+          <p className="mt-2 text-sm text-mut">
+            This token doesn’t have an active Boomerang configuration yet.
           </p>
-          <Link href="/" className="inline-block bg-gradient-to-r from-orange-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-full hover:shadow-xl hover:scale-105 transition-all">
-            Go Home
+          <Link href="/" className="btn-primary mt-6">
+            Go home <Arrow className="h-4 w-4" />
           </Link>
         </div>
       </div>
     );
   }
 
+  const solClaimed = (Number(data.stats.totalSolClaimed) / 1e9).toFixed(3);
+
+  const STATS = [
+    { Icon: Coins, label: 'Fees claimed', value: `${solClaimed} SOL`, accent: true },
+    { Icon: Bolt, label: 'Distributions', value: formatNumber(data.stats.totalExecutions) },
+    { Icon: Swap, label: 'Bought back', value: formatNumber(data.stats.totalBoughtBack) },
+    { Icon: Gift, label: 'Airdropped', value: formatNumber(data.stats.totalAirdropped) },
+  ];
+
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-6 py-6">
-        {/* Token Pair Header - Proxima Style */}
-        <div className="mb-12">
-          <div className="inline-flex items-center gap-4 bg-white/60 backdrop-blur-lg rounded-2xl p-6 border border-white/40 shadow-xl shadow-sky-900/5">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-3xl mb-3 shadow-lg shadow-purple-500/20">
-                💎
-              </div>
-              <p className="text-sm font-black text-slate-900 tracking-tight">{tokenMetadata.source?.symbol || 'Source'}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{shortenAddress(data.sourceToken.address)}</p>
-            </div>
-            
-            <div className="text-4xl text-orange-500 animate-pulse">→</div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-3xl mb-3 shadow-lg shadow-blue-500/20">
-                🎯
-              </div>
-              <p className="text-sm font-black text-slate-900 tracking-tight">{tokenMetadata.target?.symbol || 'Target'}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{shortenAddress(data.targetToken.address)}</p>
-            </div>
+    <>
+      <Navigation />
+      <main className="mx-auto max-w-6xl px-5 py-8">
+        {/* Token pair header */}
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          <div className="panel flex items-center gap-3 px-4 py-3">
+            <span className="font-mono text-sm font-semibold text-fg">
+              {shortenAddress(data.sourceToken.address)}
+            </span>
+            <Arrow className="h-4 w-4 text-boom-600" />
+            <span className="font-mono text-sm font-semibold text-fg">
+              {shortenAddress(data.targetToken.address)}
+            </span>
           </div>
+          <span
+            className={`chip ${
+              data.config.isActive ? 'text-boom-700' : 'text-mut'
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${data.config.isActive ? 'bg-boom-400' : 'bg-mut'}`} />
+            {data.config.isActive ? 'Active' : 'Paused'} · every {data.config.intervalMinutes} min
+          </span>
         </div>
 
-        {/* Top Stats Bar - Proxima Style */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {/* Total SOL Claimed */}
-          <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total P&L</span>
-              <span className="text-xs text-green-600 font-semibold">↗ Live</span>
+        {/* Stat cards */}
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {STATS.map(({ Icon, label, value, accent }) => (
+            <div key={label} className="panel p-4">
+              <span className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-night-850 text-boom-600">
+                <Icon className="h-4 w-4" />
+              </span>
+              <p className={`font-display text-2xl font-semibold tracking-tight ${accent ? 'text-boom-700' : 'text-fg'}`}>
+                {value}
+              </p>
+              <p className="mt-1 text-xs uppercase tracking-wider text-mut">{label}</p>
             </div>
-            <p className="text-3xl font-bold text-green-600 mb-1">
-              +{(Number(data.stats.totalSolClaimed) / 1e9).toFixed(2)} SOL
-            </p>
-            <p className="text-xs text-gray-500">Claimed from PumpFun</p>
-          </div>
-
-          {/* Total Executions */}
-          <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Launch</span>
-            </div>
-            <p className="text-3xl font-bold text-gray-800 mb-1">
-              {data.stats.totalExecutions}
-            </p>
-            <p className="text-xs text-gray-500">Distributions executed</p>
-          </div>
-
-          {/* Total Bought Back */}
-          <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Buyback Volume</span>
-            </div>
-            <p className="text-3xl font-bold text-orange-500 mb-1">
-              {formatNumber(data.stats.totalBoughtBack)}
-            </p>
-            <p className="text-xs text-gray-500">Tokens purchased</p>
-          </div>
-
-          {/* Total Airdropped */}
-          <div className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Distributed</span>
-              <span className="text-xs text-blue-600 font-semibold">100%</span>
-            </div>
-            <p className="text-3xl font-bold text-blue-600 mb-1">
-              {formatNumber(data.stats.totalAirdropped)}
-            </p>
-            <p className="text-xs text-gray-500">To token holders</p>
-          </div>
+          ))}
         </div>
 
-        {/* Performance Chart Section - Like Proxima */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Main Chart - Larger area like Proxima */}
-          <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Total Performance</h2>
-              <div className="flex gap-2">
+        {/* Chart + side stats */}
+        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="panel p-6 lg:col-span-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fg">Airdrops over time</h2>
+              <div className="flex gap-1">
                 {['1w', '1m', '1y', 'All'].map((range) => (
                   <button
                     key={range}
                     onClick={() => setTimeRange(range)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                      timeRange === range
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-500 hover:bg-gray-100'
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                      timeRange === range ? 'bg-boom-500/15 text-boom-700' : 'text-mut hover:text-fg'
                     }`}
                   >
                     {range}
@@ -217,167 +140,111 @@ export default function TokenDashboard() {
             {data.recentExecutions.length > 0 ? (
               <PerformanceChart data={data.recentExecutions} timeRange={timeRange} />
             ) : (
-              <div className="h-64 flex items-center justify-center text-gray-400">
+              <div className="flex h-64 items-center justify-center text-sm text-mut">
                 No execution data yet
               </div>
             )}
           </div>
 
-          {/* Affiliate Stats - Like Proxima's side panel */}
-          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-              Distribution Stats
-            </h3>
+          <div className="panel p-6">
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-mut">Distribution</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-gray-500 mb-1">Affiliate Revenue</p>
-                <p className="text-2xl font-bold text-orange-500">
-                  {(Number(data.stats.totalSolClaimed) / 1e9).toFixed(2)} SOL
-                </p>
+                <p className="text-xs text-mut">Fees claimed</p>
+                <p className="font-display text-xl font-semibold text-boom-700">{solClaimed} SOL</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">Active Holders</p>
-                <p className="text-2xl font-bold text-gray-800">
-                  {data.topRecipients.length}
-                </p>
+                <p className="text-xs text-mut">Holders reached</p>
+                <p className="font-display text-xl font-semibold text-fg">{data.topRecipients.length}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">Success Rate</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {data.stats.totalExecutions > 0 ? '100%' : '0%'}
+                <p className="text-xs text-mut">Success rate</p>
+                <p className="font-display text-xl font-semibold text-fg">
+                  {data.stats.totalExecutions > 0 ? '100%' : '—'}
                 </p>
               </div>
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-xs text-gray-500 mb-1">Interval</p>
-                <p className="text-sm font-semibold text-gray-800">
-                  Every {data.config.intervalMinutes} minutes
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Status</p>
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                  data.config.isActive 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-red-100 text-red-700'
-                }`}>
-                  {data.config.isActive ? '● Active' : '○ Paused'}
-                </span>
+              <div className="border-t border-line pt-4">
+                <p className="text-xs text-mut">Interval</p>
+                <p className="text-sm font-medium text-fg">Every {data.config.intervalMinutes} minutes</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Section - Like Proxima's layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Recipients - Proxima-inspired clean table */}
-          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Top Recipients</h2>
-              <span className="text-xs text-gray-500">{data.topRecipients.length} holders</span>
+        {/* Recipients + activity */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="panel p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fg">Top recipients</h2>
+              <span className="text-xs text-mut">{data.topRecipients.length} holders</span>
             </div>
-            <div className="space-y-2">
-              {data.topRecipients.map((recipient, index) => (
-                <div key={recipient.address} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div className="space-y-1.5">
+              {data.topRecipients.map((r, i) => (
+                <div key={r.address} className="flex items-center justify-between rounded-lg border border-line/70 px-3 py-2.5">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      index === 0 ? 'bg-yellow-100 text-yellow-700' :
-                      index === 1 ? 'bg-gray-100 text-gray-700' :
-                      index === 2 ? 'bg-orange-100 text-orange-700' :
-                      'bg-blue-50 text-blue-700'
-                    }`}>
-                      {index + 1}
-                    </div>
-                    <span className="font-mono text-sm text-gray-700">{shortenAddress(recipient.address)}</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-night-850 text-xs font-semibold text-boom-700">
+                      {i + 1}
+                    </span>
+                    <span className="font-mono text-sm text-fg">{shortenAddress(r.address)}</span>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-800">{formatNumber(recipient.totalReceived)}</p>
-                    <p className="text-xs text-gray-500">{recipient.airdropCount} drops</p>
+                    <p className="text-sm font-semibold text-fg">{formatNumber(r.totalReceived)}</p>
+                    <p className="text-xs text-mut">{r.airdropCount} drops</p>
                   </div>
                 </div>
               ))}
               {data.topRecipients.length === 0 && (
-                <div className="py-12 text-center text-gray-400">
-                  <div className="text-4xl mb-2">🎁</div>
-                  <p>No airdrops yet</p>
-                </div>
+                <div className="py-12 text-center text-sm text-mut">No airdrops yet</div>
               )}
             </div>
           </div>
 
-          {/* Recent Activity - Cleaner list style */}
-          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-800">Recent Activity</h2>
-              <span className="text-xs text-gray-500">{data.recentExecutions.length} executions</span>
+          <div className="panel p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fg">Recent activity</h2>
+              <span className="text-xs text-mut">{data.recentExecutions.length} runs</span>
             </div>
-            <div className="space-y-2">
-              {data.recentExecutions.map((execution) => (
-                <div key={execution.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
+            <div className="space-y-1.5">
+              {data.recentExecutions.map((e) => (
+                <div key={e.id} className="rounded-lg border border-line/70 px-3 py-2.5">
+                  <div className="mb-1 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                        execution.status === 'success' 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {execution.status === 'success' ? '✓' : '✗'}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          e.status === 'success' ? 'bg-boom-500/15 text-boom-700' : 'bg-red-500/15 text-red-600'
+                        }`}
+                      >
+                        {e.status === 'success' ? 'OK' : 'FAIL'}
                       </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(execution.executionTime).toLocaleTimeString()}
-                      </span>
+                      <span className="text-xs text-mut">{new Date(e.executionTime).toLocaleTimeString()}</span>
                     </div>
-                    <span className="text-xs font-bold text-green-600">
-                      +{(Number(execution.claimedSol) / 1e9).toFixed(3)} SOL
+                    <span className="text-xs font-semibold text-boom-700">
+                      +{(Number(e.claimedSol) / 1e9).toFixed(3)} SOL
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-600">
-                      {formatNumber(execution.totalAirdropped)} tokens
-                    </span>
-                    <span className="text-gray-500">
-                      to {execution.holderCount} holders
-                    </span>
+                  <div className="flex justify-between text-xs text-mut">
+                    <span>{formatNumber(e.totalAirdropped)} tokens</span>
+                    <span>to {e.holderCount} holders</span>
                   </div>
                 </div>
               ))}
               {data.recentExecutions.length === 0 && (
-                <div className="py-12 text-center text-gray-400">
-                  <div className="text-4xl mb-2">📊</div>
-                  <p>No executions yet</p>
-                </div>
+                <div className="py-12 text-center text-sm text-mut">No executions yet</div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Footer Stats Bar */}
-        <div className="flex justify-center">
-          <div className="inline-flex items-center gap-6 text-xs text-gray-500 bg-white rounded-full px-6 py-3 border border-gray-200 shadow-sm">
-            <span className="flex items-center gap-1">
-              <span className="font-semibold text-gray-700">Last execution:</span>
-              {data.stats.lastExecution 
-                ? new Date(data.stats.lastExecution).toLocaleString() 
-                : 'Never'}
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <span className="font-semibold text-gray-700">Next:</span>
-              {data.config.intervalMinutes} min
-            </span>
-            <span>•</span>
-            <span className="text-gray-400">
-              Updated {new Date(data.timestamp).toLocaleTimeString()}
-            </span>
-          </div>
+        {/* footer bar */}
+        <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-mut">
+          <span>
+            Last execution: {data.stats.lastExecution ? new Date(data.stats.lastExecution).toLocaleString() : 'Never'}
+          </span>
+          <span>·</span>
+          <span>Updated {new Date(data.timestamp).toLocaleTimeString()}</span>
         </div>
-      </div>
-
-      {/* Minimal Footer */}
-      <footer className="mt-12 py-6 text-center border-t border-gray-200 bg-white/50">
-        <p className="text-sm text-gray-600">
-          Powered by <Link href="/" className="font-semibold text-orange-500 hover:underline">Boomerang 🪃</Link>
-        </p>
-      </footer>
-    </div>
+      </main>
+      <Footer />
+    </>
   );
 }

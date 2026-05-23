@@ -21,7 +21,7 @@ router.get('/health', (req, res) => {
 router.get('/status', async (req, res) => {
   try {
     const schedulerStatus = getSchedulerStatus();
-    const activeConfigs = await db.getActiveConfigs();
+    const activeConfigs = await db.getActiveBotConfigs();
 
     res.json({
       scheduler: schedulerStatus,
@@ -116,6 +116,33 @@ router.get('/stats', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Global live activity feed (for the homepage "live from the bot" stream)
+ */
+router.get('/activity', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+    const rows = await db.getRecentActivity(limit);
+
+    res.json({
+      events: rows.map((r) => ({
+        type: r.type, // 'paid' | 'linked'
+        sourceToken: r.source_token,
+        targetToken: r.target_token,
+        holderCount: r.holder_count,
+        airdropped: r.total_airdropped,
+        bought: r.bought_token_amount,
+        claimedSol: r.claimed_sol_amount,
+        time: r.ts,
+      })),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Activity API error:', error);
     res.status(500).json({ error: error.message });
   }
 });
