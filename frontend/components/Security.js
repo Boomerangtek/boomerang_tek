@@ -1,4 +1,4 @@
-import { Lock, Key, Shield, Pause } from './Icons';
+import { Lock, Shield, Pause } from './Icons';
 
 const POINTS = [
   {
@@ -7,13 +7,6 @@ const POINTS = [
     body: 'Your wallet key is encrypted the moment you send it and stored encrypted at rest. It is only ever decrypted in memory, at execution time.',
     tile: 'bg-boom-100 text-boom-600',
     ring: 'hover:border-boom-300',
-  },
-  {
-    Icon: Key,
-    title: 'Use a dedicated wallet',
-    body: 'Setup walks you through using a fresh wallet funded only with what the bot needs — never your main holdings.',
-    tile: 'bg-sky-100 text-sky-600',
-    ring: 'hover:border-sky-300',
   },
   {
     Icon: Shield,

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Coins, Chart, Bolt, Users } from './Icons';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API = process.env.NEXT_PUBLIC_API_URL || '';
 
 function Counter({ value, decimals = 0, start }) {
   const [n, setN] = useState(0);

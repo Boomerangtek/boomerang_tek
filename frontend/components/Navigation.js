@@ -27,6 +27,9 @@ export default function Navigation() {
             <a href="#features" className="rounded-md px-3 py-1.5 text-sm font-medium text-mut transition hover:text-fg">
               Features
             </a>
+            <a href="#check" className="rounded-md px-3 py-1.5 text-sm font-medium text-mut transition hover:text-fg">
+              Check token
+            </a>
             <a href="#live" className="rounded-md px-3 py-1.5 text-sm font-medium text-mut transition hover:text-fg">
               Live
             </a>

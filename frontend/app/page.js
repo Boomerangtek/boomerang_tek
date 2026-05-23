@@ -2,6 +2,7 @@ import Marquee from '../components/Marquee'
 import Navigation from '../components/Navigation'
 import Hero from '../components/Hero'
 import StatsBar from '../components/StatsBar'
+import TokenSearch from '../components/TokenSearch'
 import LiveFeed from '../components/LiveFeed'
 import HowItWorks from '../components/HowItWorks'
 import Features from '../components/Features'
@@ -20,6 +21,7 @@ export default function Home() {
 
       <div className="mx-auto max-w-6xl space-y-20 px-5 py-20">
         <Reveal><StatsBar /></Reveal>
+        <Reveal><TokenSearch /></Reveal>
         <Reveal><HowItWorks /></Reveal>
         <div id="live" className="scroll-mt-20 grid items-start gap-8 lg:grid-cols-[0.7fr_1.3fr]">
           <div>
