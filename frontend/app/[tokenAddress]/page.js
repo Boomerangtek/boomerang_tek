@@ -26,7 +26,7 @@ export default function TokenDashboard() {
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
         const response = await fetch(`${apiUrl}/api/dashboard/${tokenAddress}`);
         if (!response.ok) throw new Error('Token not found or not active');
         setData(await response.json());

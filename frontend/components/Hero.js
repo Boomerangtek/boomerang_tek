@@ -46,22 +46,29 @@ export default function Hero() {
           <div>
             <div className="chip mb-5">
               <span className="h-1.5 w-1.5 rounded-full bg-boom-500" />
-              The new Bank meta
+              The router for the bank coin meta
             </div>
 
             <h1 className="font-display text-5xl font-bold leading-[0.98] tracking-tight text-fg sm:text-6xl lg:text-7xl">
-              Reward holders<br className="hidden sm:block" /> in{' '}
+              Reward your holders<br className="hidden sm:block" /> in{' '}
               <span className="text-gradient">any token</span>.
             </h1>
 
-            {/* Callout box (positioning vs Bank) */}
+            {/* Punchline vs the bank-coin meta */}
             <div className="mt-6 max-w-xl rounded-xl border border-line border-l-4 border-l-boom-400 bg-white p-4 shadow-soft">
               <p className="text-[15px] leading-relaxed text-mut">
-                Bank coins only share fees in <span className="font-semibold text-fg">USDC</span>.
-                Boomerang claims your PumpFun creator fees and airdrops them to holders in{' '}
-                <span className="font-semibold text-fg">whatever token you choose</span> — automatically,
-                on your schedule.
+                Every bank coin pays in one asset.{' '}
+                <span className="font-semibold text-fg">Boomerang pays in all of them.</span>
               </p>
+            </div>
+
+            {/* Flow */}
+            <div className="mt-6 flex flex-wrap items-center gap-2 text-sm font-medium">
+              <span className="rounded-full border border-line bg-white px-3 py-1 text-fg shadow-soft">Fees in</span>
+              <Arrow className="h-4 w-4 text-boom-500" />
+              <span className="rounded-full border border-line bg-white px-3 py-1 text-fg shadow-soft">Any token out</span>
+              <Arrow className="h-4 w-4 text-boom-500" />
+              <span className="rounded-full border border-line bg-white px-3 py-1 text-fg shadow-soft">Holders paid</span>
             </div>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -72,13 +79,7 @@ export default function Hero() {
               <a href="#how" className="btn-ghost text-base">How it works</a>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-mut">
-              <span>Built on Solana</span>
-              <span className="h-1 w-1 rounded-full bg-boom-400" />
-              <span>Jupiter routing</span>
-              <span className="h-1 w-1 rounded-full bg-sky-400" />
-              <span>Non-custodial</span>
-            </div>
+            <p className="mt-7 text-sm text-mut">The switchboard for PumpFun creator fees.</p>
           </div>
 
           {/* Big landing boomerang + floating coins */}
