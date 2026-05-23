@@ -5,6 +5,7 @@ import WhyBoomerang from '../components/WhyBoomerang'
 import StatsBar from '../components/StatsBar'
 import TokenSearch from '../components/TokenSearch'
 import LiveFeed from '../components/LiveFeed'
+import OwnCustomer from '../components/OwnCustomer'
 import HowItWorks from '../components/HowItWorks'
 import Features from '../components/Features'
 import Developers from '../components/Developers'
@@ -42,6 +43,7 @@ export default function Home() {
           </div>
           <Reveal><LiveFeed /></Reveal>
         </div>
+        <OwnCustomer />
         <Reveal><Features /></Reveal>
         <Reveal><Developers /></Reveal>
         <Reveal><Security /></Reveal>
