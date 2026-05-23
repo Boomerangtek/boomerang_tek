@@ -51,7 +51,7 @@ export default function Hero() {
 
             <h1 className="font-display text-5xl font-bold leading-[0.98] tracking-tight text-fg sm:text-6xl lg:text-7xl">
               Reward your holders<br className="hidden sm:block" /> in{' '}
-              <span className="text-gradient">any token</span>.
+              <span className="text-gradient">ANY token</span>.
             </h1>
 
             {/* Punchline vs the bank-coin meta */}
