@@ -11,7 +11,7 @@ export default function CTA() {
           Send your fees back to your community
         </h2>
         <p className="mt-2 text-sm text-mut">
-          Set up your bot in under 10 minutes. No code, non-custodial intervals.
+          Set up your bot in under 2 minutes. No code, non-custodial intervals.
         </p>
       </div>
       <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="btn-primary shrink-0">
