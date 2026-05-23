@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Arrow } from './Icons';
+import CopyCA from './CopyCA';
 
 export default function Navigation() {
   const botUsername = process.env.NEXT_PUBLIC_BOT_USERNAME || 'boomerangtekbot';
@@ -33,17 +34,14 @@ export default function Navigation() {
             <a href="#live" className="rounded-md px-3 py-1.5 text-sm font-medium text-mut transition hover:text-fg">
               Live
             </a>
+            <a href="#developers" className="rounded-md px-3 py-1.5 text-sm font-medium text-mut transition hover:text-fg">
+              API
+            </a>
           </div>
 
           {/* Right */}
           <div className="flex items-center gap-3">
-            <span className="hidden items-center gap-1.5 text-xs font-medium text-mut sm:flex">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-boom-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-boom-400" />
-              </span>
-              Live on Solana
-            </span>
+            <CopyCA className="hidden sm:inline-flex" />
             <a href={`https://t.me/${botUsername}`} target="_blank" rel="noopener noreferrer" className="btn-primary">
               Launch bot
               <Arrow className="h-4 w-4" />

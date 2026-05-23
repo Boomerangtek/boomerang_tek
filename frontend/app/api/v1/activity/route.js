@@ -1,7 +1,12 @@
-import { getActivity } from '../../../lib/queries';
+import { getActivity } from '../../../../lib/queries';
+import { apiJson, apiOptions } from '../../../../lib/apiResponse';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+export function OPTIONS() {
+  return apiOptions();
+}
 
 export async function GET(request) {
   try {
@@ -9,20 +14,19 @@ export async function GET(request) {
     const limit = Math.min(parseInt(searchParams.get('limit')) || 20, 50);
     const rows = await getActivity(limit);
 
-    return Response.json({
+    return apiJson({
       events: rows.map((r) => ({
-        type: r.type,
-        sourceToken: r.source_token,
-        targetToken: r.target_token,
+        type: r.type, // 'paid' | 'linked'
+        token: r.source_token,
+        rewardToken: r.target_token,
         holderCount: r.holder_count,
         airdropped: r.total_airdropped,
-        bought: r.bought_token_amount,
         claimedSol: r.claimed_sol_amount,
         time: r.ts,
       })),
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return apiJson({ error: error.message }, 500);
   }
 }

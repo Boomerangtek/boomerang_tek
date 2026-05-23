@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { Arrow } from './Icons';
+import CopyCA from './CopyCA';
 
 const coinUrl = (m) => `https://dd.dexscreener.com/ds-data/tokens/solana/${m}.png`;
 
@@ -79,7 +80,10 @@ export default function Hero() {
               <a href="#how" className="btn-ghost text-base">How it works</a>
             </div>
 
-            <p className="mt-7 text-sm text-mut">The switchboard for PumpFun creator fees.</p>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <CopyCA />
+              <p className="text-sm text-mut">The switchboard for PumpFun creator fees.</p>
+            </div>
           </div>
 
           {/* Big landing boomerang + floating coins */}

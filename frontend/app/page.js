@@ -6,6 +6,7 @@ import TokenSearch from '../components/TokenSearch'
 import LiveFeed from '../components/LiveFeed'
 import HowItWorks from '../components/HowItWorks'
 import Features from '../components/Features'
+import Developers from '../components/Developers'
 import Security from '../components/Security'
 import FAQ from '../components/FAQ'
 import CTA from '../components/CTA'
@@ -32,10 +33,14 @@ export default function Home() {
             <p className="mt-3 text-sm leading-relaxed text-mut">
               Tokens linking up and holders getting paid, in real time.
             </p>
+            <p className="mt-3 text-xs leading-relaxed text-mut/70 italic">
+              Demo data for now — this feed will be wired to real on-chain activity soon.
+            </p>
           </div>
           <Reveal><LiveFeed /></Reveal>
         </div>
         <Reveal><Features /></Reveal>
+        <Reveal><Developers /></Reveal>
         <Reveal><Security /></Reveal>
         <Reveal><FAQ /></Reveal>
         <Reveal><CTA /></Reveal>

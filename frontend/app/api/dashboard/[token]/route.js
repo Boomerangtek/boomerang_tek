@@ -1,60 +1,21 @@
-import { getSql } from '../../../../lib/db';
+import { getDashboard } from '../../../../lib/queries';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request, { params }) {
   try {
-    const sql = getSql();
     const { token } = await params;
+    const data = await getDashboard(token);
 
-    const [config] = await sql`
-      SELECT * FROM bot_configs
-      WHERE source_token_address = ${token} AND is_active = true
-      LIMIT 1
-    `;
-
-    if (!config) {
+    if (!data) {
       return Response.json(
         { error: 'Token not found', message: 'No active Boomerang configuration found for this token' },
         { status: 404 }
       );
     }
 
-    const [[stats], topRecipients, recentExecutions] = await Promise.all([
-      sql`
-        SELECT COALESCE(SUM(total_airdropped), 0)     AS total_airdropped,
-               COALESCE(SUM(bought_token_amount), 0)  AS total_bought_back,
-               COALESCE(SUM(claimed_sol_amount), 0)   AS total_sol_claimed,
-               COUNT(*)::int                          AS execution_count,
-               MAX(execution_time)                    AS last_execution
-        FROM execution_logs el
-        JOIN bot_configs bc ON el.config_id = bc.id
-        WHERE bc.source_token_address = ${token} AND el.status = 'success'
-      `,
-      sql`
-        SELECT holder_address,
-               SUM(airdrop_amount) AS total_received,
-               COUNT(*)::int       AS airdrop_count
-        FROM airdrop_transactions at
-        JOIN execution_logs el ON at.execution_log_id = el.id
-        JOIN bot_configs bc ON el.config_id = bc.id
-        WHERE bc.source_token_address = ${token} AND at.status = 'success'
-        GROUP BY holder_address
-        ORDER BY total_received DESC
-        LIMIT 10
-      `,
-      sql`
-        SELECT el.id, el.claimed_sol_amount, el.bought_token_amount, el.total_airdropped,
-               el.holder_count, el.execution_time, el.status
-        FROM execution_logs el
-        JOIN bot_configs bc ON el.config_id = bc.id
-        WHERE bc.source_token_address = ${token}
-        ORDER BY el.execution_time DESC
-        LIMIT 10
-      `,
-    ]);
-
+    const { config, stats, topRecipients, recentExecutions } = data;
     return Response.json({
       sourceToken: { address: config.source_token_address },
       targetToken: { address: config.target_token_address },

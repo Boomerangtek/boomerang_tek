@@ -27,6 +27,10 @@ const ITEMS = [
     q: 'Can I stop it?',
     a: 'Yes — pause, resume, or delete your configuration from Telegram at any time. Deleting the config removes the bot’s access entirely.',
   },
+  {
+    q: 'Is there an API?',
+    a: 'Yes — Boomerang exposes a free, public, read-only API at /api/v1. No key required. Query global stats, recent activity, and whether any token is linked. See the Developers section above for the endpoints.',
+  },
 ];
 
 export default function FAQ() {
