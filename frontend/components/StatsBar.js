@@ -35,7 +35,7 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
 // Launch baselines — real on-chain activity is added on top of these, so the
 // counters keep climbing as the bot actually distributes from now on.
-const BASE_REDISTRIBUTED_USD = 6329;
+const BASE_REDISTRIBUTED_USD = 6575;
 const BASE_DISTRIBUTIONS = 18;
 const FLOOR_ACTIVE_BOTS = 6;
 
