@@ -11,7 +11,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const connection = new Connection(process.env.SOLANA_RPC_URL, 'confirmed');
-const JUPITER_API_URL = 'https://quote-api.jup.ag/v6';
+// Jupiter retired quote-api.jup.ag/v6; the current free endpoint is lite-api.
+const JUPITER_API_URL = 'https://lite-api.jup.ag/swap/v1';
 
 // Native SOL mint address
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
