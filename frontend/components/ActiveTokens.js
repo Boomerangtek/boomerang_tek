@@ -94,6 +94,11 @@ export default function ActiveTokens() {
                       {t.name || `$${symbol}`}
                     </span>
                     <span className="shrink-0 font-mono text-[11px] text-mut">${symbol}</span>
+                    {t.trollMode && (
+                      <span className="shrink-0 rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-700">
+                        🎲 Troll Mode
+                      </span>
+                    )}
                   </div>
                   <div className="truncate text-xs text-mut">
                     {t.trollMode ? '🎲 Troll Mode' : `→ $${rewardSymbol}`} · every {t.intervalMinutes}m
