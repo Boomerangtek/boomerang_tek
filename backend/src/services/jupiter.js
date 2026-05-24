@@ -148,13 +148,22 @@ export async function swapSolForToken(privateKey, outputMint, solAmount, slippag
 
     console.log(`✅ Swap confirmed: ${signature}`);
 
-    // Measure the real amount received from the on-chain balance delta.
-    // Fall back to the quote if the delta can't be read for any reason.
-    const balanceAfter = await getTokenBalance(wallet.publicKey, outputMint);
-    const received = balanceAfter - balanceBefore;
+    // Measure the real amount received from the on-chain balance delta. The
+    // balance can lag confirmation, so poll briefly until it reflects the swap.
+    // Using the *actual* received amount (not the quote) avoids trying to
+    // airdrop more tokens than we hold — which would fail the largest transfer.
+    let received = 0n;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const balanceAfter = await getTokenBalance(wallet.publicKey, outputMint);
+      received = balanceAfter - balanceBefore;
+      if (received > 0n) break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
     const outputAmount = received > 0n ? received : BigInt(outAmount);
 
-    if (received !== BigInt(outAmount)) {
+    if (received <= 0n) {
+      console.log(`⚠️  Could not read received balance; falling back to quote ${outAmount}`);
+    } else if (received !== BigInt(outAmount)) {
       console.log(`📊 Actual received: ${received.toString()} (quote was ${outAmount})`);
     }
 

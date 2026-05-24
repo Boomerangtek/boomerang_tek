@@ -59,8 +59,16 @@ export async function getTokenHolders(tokenAddress, minBalance = 0) {
 
   const min = BigInt(minBalance || 0);
   const holders = [];
+  let excludedPools = 0;
   for (const [address, balance] of byOwner) {
     if (balance < min) continue;
+    // Skip program-owned accounts (bonding curve, AMM/liquidity pools, vaults):
+    // their owner is a PDA which is off the ed25519 curve. They aren't real
+    // holders, can't receive via a standard ATA, and shouldn't get rewards.
+    if (!PublicKey.isOnCurve(new PublicKey(address).toBytes())) {
+      excludedPools++;
+      continue;
+    }
     holders.push({
       address,
       balance,
@@ -68,7 +76,7 @@ export async function getTokenHolders(tokenAddress, minBalance = 0) {
     });
   }
 
-  console.log(`✅ Found ${holders.length} holders (${accounts.length} token accounts scanned)`);
+  console.log(`✅ Found ${holders.length} holders (${accounts.length} accounts scanned, ${excludedPools} pool/PDA excluded)`);
   holderCache.set(cacheKey, { data: holders, timestamp: Date.now() });
   return holders;
 }
