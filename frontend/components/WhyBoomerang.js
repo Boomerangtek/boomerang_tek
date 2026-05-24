@@ -60,7 +60,7 @@ export default function WhyBoomerang() {
           style={{ transitionDelay: '900ms' }}
         >
           PumpFun lets you buy back — but only in one asset. Want to reward holders in
-          USDC, SOL, gold, or your own ticker? Today you&apos;d have to build a whole
+          USDC, SOL, $TROLL, or your own ticker? Today you&apos;d have to build a whole
           project around it.
         </p>
 
