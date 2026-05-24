@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { X } from './Icons';
+import { X, Github } from './Icons';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -25,6 +25,15 @@ export default function Footer() {
             className="flex items-center transition hover:text-fg"
           >
             <X className="h-4 w-4" />
+          </a>
+          <a
+            href="https://github.com/Boomerangtek/boomerang_tek"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Boomerang on GitHub"
+            className="flex items-center transition hover:text-fg"
+          >
+            <Github className="h-4 w-4" />
           </a>
           <a href="https://jup.ag" target="_blank" rel="noopener noreferrer" className="transition hover:text-fg">
             Jupiter

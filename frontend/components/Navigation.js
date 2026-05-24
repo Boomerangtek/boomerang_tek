@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Arrow, X } from './Icons';
+import { Arrow, X, Github } from './Icons';
 import CopyCA from './CopyCA';
 
 export default function Navigation() {
@@ -50,6 +50,15 @@ export default function Navigation() {
               className="flex h-8 w-8 items-center justify-center rounded-md text-mut transition hover:text-fg"
             >
               <X className="h-[18px] w-[18px]" />
+            </a>
+            <a
+              href="https://github.com/Boomerangtek/boomerang_tek"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Boomerang on GitHub"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-mut transition hover:text-fg"
+            >
+              <Github className="h-[18px] w-[18px]" />
             </a>
             <a href={`https://t.me/${botUsername}`} target="_blank" rel="noopener noreferrer" className="btn-primary">
               Launch bot
