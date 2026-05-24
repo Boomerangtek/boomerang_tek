@@ -142,15 +142,22 @@ export default function LiveFeed() {
   useEffect(() => {
     const clock = setInterval(() => setNow(Date.now()), 1000);
 
-    const pump = setInterval(() => {
-      if (realMode.current) {
-        setEvents((prev) =>
-          [demoEventFromPairs(`p${demoId.current++}`, realPairs.current), ...prev].slice(0, MAX_ROWS)
-        );
-      } else if (demoMode.current) {
-        setEvents((prev) => [randomDemoEvent(demoId.current++), ...prev].slice(0, MAX_ROWS));
-      }
-    }, 9000);
+    // Add an event on a randomized cadence (40s–80s) so it feels organic.
+    let pump;
+    const schedulePump = () => {
+      const delay = 40000 + Math.random() * 40000;
+      pump = setTimeout(() => {
+        if (realMode.current) {
+          setEvents((prev) =>
+            [demoEventFromPairs(`p${demoId.current++}`, realPairs.current), ...prev].slice(0, MAX_ROWS)
+          );
+        } else if (demoMode.current) {
+          setEvents((prev) => [randomDemoEvent(demoId.current++), ...prev].slice(0, MAX_ROWS));
+        }
+        schedulePump();
+      }, delay);
+    };
+    schedulePump();
 
     // Periodically refresh the real token pairs so newly linked tokens join in.
     const refresh = setInterval(async () => {
@@ -168,7 +175,7 @@ export default function LiveFeed() {
 
     return () => {
       clearInterval(clock);
-      clearInterval(pump);
+      clearTimeout(pump);
       clearInterval(refresh);
     };
   }, []);
