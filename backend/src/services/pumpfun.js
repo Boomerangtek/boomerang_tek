@@ -27,6 +27,29 @@ export async function getCreatorFees(walletPublicKey) {
   }
 }
 
+const SYSTEM_PROGRAM = '11111111111111111111111111111111';
+
+/**
+ * Resolve a PumpFun token's on-chain creator (the wallet that earns its creator
+ * fees), used to verify a dev actually owns the token they're linking.
+ * @param {string} mint - Token mint address
+ * @returns {Promise<{creator: string|null, verifiable: boolean}>}
+ *   verifiable=false for graduated/non-PumpFun tokens whose creator can't be
+ *   read from the bonding curve (caller should warn rather than hard-block).
+ */
+export async function getCoinCreator(mint) {
+  try {
+    const bondingCurve = await sdk.fetchBondingCurve(new PublicKey(mint));
+    const creator = bondingCurve?.creator?.toBase58?.() || String(bondingCurve?.creator || '');
+    if (creator && creator !== SYSTEM_PROGRAM) {
+      return { creator, verifiable: true };
+    }
+    return { creator: null, verifiable: false }; // graduated — creator not on curve
+  } catch {
+    return { creator: null, verifiable: false }; // no bonding curve / not a pump token
+  }
+}
+
 /**
  * Claim creator fees and return transaction signature
  * @param {string} privateKey - The private key (base58 or array string)

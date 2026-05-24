@@ -2,7 +2,7 @@ import { PublicKey } from '@solana/web3.js';
 import * as db from '../db/queries.js';
 import * as keyboards from './keyboards.js';
 import { encryptPrivateKey, isValidPrivateKey } from '../services/encryption.js';
-import { getPublicKeyFromPrivate } from '../services/pumpfun.js';
+import { getPublicKeyFromPrivate, getCoinCreator } from '../services/pumpfun.js';
 import { getSolBalance } from '../services/solana.js';
 
 // In-memory setup / edit sessions, keyed by telegram id
@@ -249,11 +249,36 @@ async function handleSourceTokenInput(ctx, session, tokenAddress) {
       keyboards.cancelKeyboard()
     );
   }
+
+  // The dev wallet must be the token's creator — otherwise there are no creator
+  // fees to claim, and it would let anyone link a token they don't own.
+  let ownershipNote = '';
+  try {
+    const { creator, verifiable } = await getCoinCreator(tokenAddress);
+    if (verifiable && creator !== session.data.publicKey) {
+      return ctx.replyWithMarkdown(
+        `❌ *This isn't your token.*\n\n` +
+          `That token's creator wallet is \`${short(creator)}\`, but your dev wallet is ` +
+          `\`${short(session.data.publicKey)}\`.\n\n` +
+          `Boomerang must be set up from the *token's creator wallet* (the one that earns its ` +
+          `PumpFun fees). Send a token you created, or restart /setup with the right wallet.`,
+        keyboards.cancelKeyboard()
+      );
+    }
+    if (!verifiable) {
+      ownershipNote =
+        `\n\n⚠️ Couldn't verify creator on-chain (graduated or non-PumpFun token) — ` +
+        `make sure this is *your* token, or the bot will have no fees to claim.`;
+    }
+  } catch {
+    /* verification unavailable — proceed without blocking */
+  }
+
   session.data.sourceToken = tokenAddress;
   session.step = 'target_token';
 
   await ctx.replyWithMarkdown(
-    `✅ Your token set.\n\n` +
+    `✅ Your token set.${ownershipNote}\n\n` +
       `🎯 *Step 3 of 4 — Reward token*\n\n` +
       `Send the *token holders should receive*.\n\n` +
       `• \`So11111111111111111111111111111111111111112\` — SOL\n` +
