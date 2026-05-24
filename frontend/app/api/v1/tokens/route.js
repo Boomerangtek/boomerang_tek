@@ -17,9 +17,8 @@ export async function GET() {
     const mints = [...new Set(rows.flatMap((r) => [r.address, r.reward_token]))];
     const meta = await fetchTokenMeta(mints);
 
-    return apiJson({
-      count: rows.length,
-      tokens: rows.map((r) => ({
+    const tokens = rows
+      .map((r) => ({
         address: r.address,
         name: meta[r.address]?.name || null,
         symbol: meta[r.address]?.symbol || null,
@@ -31,9 +30,11 @@ export async function GET() {
         distributions: r.distributions,
         lastExecution: r.last_execution,
         dashboardUrl: SITE ? `${SITE}/${r.address}` : `/${r.address}`,
-      })),
-      timestamp: new Date().toISOString(),
-    });
+      }))
+      // Highest market cap first; tokens without a known mcap go last.
+      .sort((a, b) => (b.marketCap ?? -1) - (a.marketCap ?? -1));
+
+    return apiJson({ count: tokens.length, tokens, timestamp: new Date().toISOString() });
   } catch (error) {
     return apiJson({ error: error.message }, 500);
   }
