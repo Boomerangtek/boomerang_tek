@@ -20,6 +20,7 @@ async function fromJupiter(mints, map) {
         name: t.name || null,
         symbol: t.symbol || null,
         image: t.icon || null,
+        marketCap: t.mcap ?? t.fdv ?? null,
       };
     }
   } catch {
@@ -46,6 +47,7 @@ async function fromDexScreener(mints, map) {
               name: side.name || null,
               symbol: side.symbol || null,
               image: pair.info?.imageUrl || null,
+              marketCap: pair.marketCap ?? pair.fdv ?? null,
             },
           };
         }
@@ -57,6 +59,7 @@ async function fromDexScreener(mints, map) {
         name: cur.name || v.meta.name,
         symbol: cur.symbol || v.meta.symbol,
         image: cur.image || v.meta.image,
+        marketCap: cur.marketCap ?? v.meta.marketCap,
       };
     }
   } catch {

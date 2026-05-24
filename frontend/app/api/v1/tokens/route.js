@@ -24,6 +24,7 @@ export async function GET() {
         name: meta[r.address]?.name || null,
         symbol: meta[r.address]?.symbol || null,
         image: meta[r.address]?.image || null,
+        marketCap: meta[r.address]?.marketCap ?? null,
         rewardToken: r.reward_token,
         rewardSymbol: meta[r.reward_token]?.symbol || null,
         intervalMinutes: r.interval_minutes,

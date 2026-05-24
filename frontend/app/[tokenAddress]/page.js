@@ -14,6 +14,32 @@ function shortenAddress(a) {
 function formatNumber(n) {
   return new Intl.NumberFormat('en-US').format(n || 0);
 }
+function formatCompact(n) {
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n || 0);
+}
+function tokenLabel(t) {
+  return t?.symbol || shortenAddress(t?.address);
+}
+
+/** Token logo with graceful fallback to a lettered badge. */
+function TokenLogo({ token, size = 'h-11 w-11' }) {
+  const [broken, setBroken] = useState(false);
+  if (token?.image && !broken) {
+    return (
+      <img
+        src={token.image}
+        alt=""
+        onError={() => setBroken(true)}
+        className={`${size} shrink-0 rounded-full border border-line bg-night-850 object-cover`}
+      />
+    );
+  }
+  return (
+    <div className={`${size} flex shrink-0 items-center justify-center rounded-full border border-line bg-boom-100 text-xs font-extrabold text-boom-700`}>
+      {tokenLabel(token).replace('$', '').slice(0, 3).toUpperCase()}
+    </div>
+  );
+}
 
 export default function TokenDashboard() {
   const params = useParams();
@@ -22,6 +48,17 @@ export default function TokenDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('1m');
+  const [copied, setCopied] = useState(false);
+
+  const copyCA = async () => {
+    try {
+      await navigator.clipboard.writeText(tokenAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -82,34 +119,59 @@ export default function TokenDashboard() {
     <>
       <Navigation />
       <main className="mx-auto max-w-6xl px-5 py-8">
-        {/* Token pair header */}
-        <div className="mb-6 flex flex-wrap items-center gap-4">
-          <div className="panel flex items-center gap-3 px-4 py-3">
-            <span className="font-mono text-sm font-semibold text-fg">
-              {shortenAddress(data.sourceToken.address)}
-            </span>
-            <Arrow className="h-4 w-4 text-boom-600" />
-            <span className="font-mono text-sm font-semibold text-fg">
-              {shortenAddress(data.targetToken.address)}
-            </span>
+        {/* Token header — identity, copiable CA, what the bot does */}
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <TokenLogo token={data.sourceToken} />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <h1 className="font-display text-xl font-bold tracking-tight text-fg">
+                  {data.sourceToken.name || tokenLabel(data.sourceToken)}
+                </h1>
+                <span className="text-sm font-medium text-mut">${tokenLabel(data.sourceToken)}</span>
+                {data.sourceToken.marketCap ? (
+                  <span className="rounded-full bg-boom-100 px-2 py-0.5 text-[11px] font-semibold text-boom-700">
+                    MC ${formatCompact(data.sourceToken.marketCap)}
+                  </span>
+                ) : null}
+              </div>
+              <button
+                onClick={copyCA}
+                title="Copy contract address"
+                className="mt-1 inline-flex items-center gap-1.5 font-mono text-xs text-mut transition hover:text-fg"
+              >
+                {shortenAddress(data.sourceToken.address)}
+                {copied ? (
+                  <span className="text-boom-600">Copied!</span>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="11" height="11" rx="2" />
+                    <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
-          <span
-            className={`chip ${
-              data.config.isActive ? 'text-boom-700' : 'text-mut'
-            }`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${data.config.isActive ? 'bg-boom-400' : 'bg-mut'}`} />
-            {data.config.isActive ? 'Active' : 'Paused'} · every {data.config.intervalMinutes} min
-          </span>
-          <a
-            href={`https://solscan.io/token/${data.sourceToken.address}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-ghost px-3 py-1.5 text-xs"
-          >
-            View on Solscan
-            <Arrow className="h-3.5 w-3.5" />
-          </a>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`chip ${data.config.isActive ? 'text-boom-700' : 'text-mut'}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${data.config.isActive ? 'bg-boom-400' : 'bg-mut'}`} />
+              {data.config.isActive ? 'Active' : 'Paused'} · every {data.config.intervalMinutes} min
+            </span>
+            <span className="chip text-fg">
+              <Gift className="h-3.5 w-3.5 text-boom-600" />
+              Rewards in ${tokenLabel(data.targetToken)}
+            </span>
+            <a
+              href={`https://solscan.io/token/${data.sourceToken.address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-ghost px-3 py-1.5 text-xs"
+            >
+              Solscan
+              <Arrow className="h-3.5 w-3.5" />
+            </a>
+          </div>
         </div>
 
         {/* Stat cards */}
@@ -223,9 +285,10 @@ export default function TokenDashboard() {
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-mut">
-                    <span>{formatNumber(e.totalAirdropped)} tokens</span>
+                    <span>
+                      {formatNumber(e.totalAirdropped)} ${tokenLabel(data.targetToken)} → {e.holderCount} holders
+                    </span>
                     <span className="flex items-center gap-2">
-                      to {e.holderCount} holders
                       {e.txSignature && (
                         <a
                           href={`https://solscan.io/tx/${e.txSignature}`}

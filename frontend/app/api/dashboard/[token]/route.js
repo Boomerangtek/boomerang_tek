@@ -1,4 +1,5 @@
 import { getDashboard } from '../../../../lib/queries';
+import { fetchTokenMeta } from '../../../../lib/tokenMeta';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,9 +17,12 @@ export async function GET(request, { params }) {
     }
 
     const { config, stats, topRecipients, recentExecutions } = data;
+    const src = config.source_token_address;
+    const tgt = config.target_token_address;
+    const meta = await fetchTokenMeta([src, tgt]);
     return Response.json({
-      sourceToken: { address: config.source_token_address },
-      targetToken: { address: config.target_token_address },
+      sourceToken: { address: src, name: meta[src]?.name || null, symbol: meta[src]?.symbol || null, image: meta[src]?.image || null, marketCap: meta[src]?.marketCap ?? null },
+      targetToken: { address: tgt, name: meta[tgt]?.name || null, symbol: meta[tgt]?.symbol || null, image: meta[tgt]?.image || null, marketCap: meta[tgt]?.marketCap ?? null },
       stats: {
         totalAirdropped: stats.total_airdropped || '0',
         totalBoughtBack: stats.total_bought_back || '0',

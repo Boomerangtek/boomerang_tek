@@ -6,6 +6,9 @@ import { resolveToken } from '../lib/tokens';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
+const compact = (n) =>
+  new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n || 0);
+
 /** Coin avatar: real image → DexScreener CDN → colored ticker badge. */
 function Coin({ mint, image }) {
   const fallback = resolveToken(mint);
@@ -93,6 +96,7 @@ export default function ActiveTokens() {
                   </div>
                   <div className="truncate text-xs text-mut">
                     → ${rewardSymbol} · every {t.intervalMinutes}m
+                    {t.marketCap ? ` · MC $${compact(t.marketCap)}` : ''}
                     {t.distributions > 0 ? ` · ${t.distributions} payouts` : ''}
                   </div>
                 </div>
