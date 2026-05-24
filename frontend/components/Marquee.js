@@ -1,17 +1,49 @@
 'use client';
 
-const ITEMS = [
+import { useEffect, useState } from 'react';
+import { resolveToken } from '../lib/tokens';
+
+const API = process.env.NEXT_PUBLIC_API_URL || '';
+
+// Shown until live airdrops load (and as a fallback if there are none yet).
+const FALLBACK = [
   'Your fees always come back',
   'Claim → Buy → Airdrop or Burn',
   'Paid proportionally to holders',
   'Pick any reward token',
-  'Buy back & burn to shrink supply',
   'Runs every 1–60 minutes',
   'Built on Solana',
 ];
 
 export default function Marquee() {
-  const loop = [...ITEMS, ...ITEMS];
+  const [items, setItems] = useState(FALLBACK);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch(`${API}/api/activity?limit=20`, { cache: 'no-store' });
+        const data = await res.json();
+        const meta = data.meta || {};
+        const sym = (m) => meta[m]?.symbol || resolveToken(m).symbol;
+        const airdrops = (data.events || [])
+          .filter((e) => e.type === 'paid' && e.holderCount > 0)
+          .map((e) => `🎁 $${sym(e.sourceToken)} paid ${e.holderCount} holders in $${sym(e.targetToken)}`);
+        if (!cancelled && airdrops.length) setItems(airdrops);
+      } catch {
+        /* keep fallback */
+      }
+    }
+    load();
+    const t = setInterval(load, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
+
+  // Duplicate so the CSS marquee loops seamlessly.
+  const loop = [...items, ...items];
 
   return (
     <div className="relative z-50 overflow-hidden border-b border-boom-200 bg-boom-50">

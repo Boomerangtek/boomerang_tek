@@ -4,6 +4,7 @@ import Navigation from '../../components/Navigation';
 import Footer from '../../components/Footer';
 import WalletContextProvider from '../../components/vote/WalletContextProvider';
 import VoteDashboard from '../../components/vote/VoteDashboard';
+import LiveVotes from '../../components/vote/LiveVotes';
 
 export default function VotePage() {
   return (
@@ -20,6 +21,7 @@ export default function VotePage() {
             Votes are weighted by your holdings at the cycle snapshot — and gasless (just sign a message).
           </p>
         </div>
+        <LiveVotes />
         <WalletContextProvider>
           <VoteDashboard />
         </WalletContextProvider>

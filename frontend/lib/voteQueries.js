@@ -72,6 +72,29 @@ export async function getOption(cycleId, optionId) {
 }
 
 /**
+ * All currently open vote cycles (public) with per-option tallies — for the
+ * "live votes" board. Caller groups rows by cycle to find the leader + total.
+ */
+export async function getActiveCycles() {
+  const sql = getSql();
+  return await sql`
+    SELECT vc.id                    AS cycle_id,
+           bc.source_token_address  AS token,
+           vc.ends_at,
+           o.token_address          AS option_token,
+           COALESCE(SUM(v.weight), 0)::text AS weight,
+           COUNT(v.voter_address)::int      AS voters
+    FROM vote_cycles vc
+    JOIN bot_configs bc ON bc.id = vc.config_id AND bc.is_active = true AND bc.vote_mode = true
+    LEFT JOIN vote_options o ON o.cycle_id = vc.id
+    LEFT JOIN votes v ON v.option_id = o.id
+    WHERE vc.status = 'open'
+    GROUP BY vc.id, bc.source_token_address, vc.ends_at, o.token_address
+    ORDER BY vc.ends_at ASC, weight DESC
+  `;
+}
+
+/**
  * Every open vote cycle a wallet is eligible to vote in (i.e. it appears in the
  * snapshot with weight > 0), with the token + its current vote pick.
  */
