@@ -165,10 +165,16 @@ export default function TokenDashboard() {
               <span className={`h-1.5 w-1.5 rounded-full ${data.config.isActive ? 'bg-boom-400' : 'bg-mut'}`} />
               {data.config.isActive ? 'Active' : 'Paused'} · every {data.config.intervalMinutes} min
             </span>
-            <span className="chip text-fg">
-              <Gift className="h-3.5 w-3.5 text-boom-600" />
-              Rewards in ${tokenLabel(data.targetToken)}
-            </span>
+            {data.config.trollMode ? (
+              <span className="chip border-purple-300 bg-purple-50 text-purple-700">
+                🎲 Troll Mode · random reward 👹
+              </span>
+            ) : (
+              <span className="chip text-fg">
+                <Gift className="h-3.5 w-3.5 text-boom-600" />
+                Rewards in ${tokenLabel(data.targetToken)}
+              </span>
+            )}
             <a
               href={`https://solscan.io/token/${data.sourceToken.address}`}
               target="_blank"
@@ -303,7 +309,8 @@ export default function TokenDashboard() {
                   </div>
                   <div className="flex justify-between text-xs text-mut">
                     <span>
-                      {formatCompact(toUnits(e.totalAirdropped))} ${rewardSym} → {e.holderCount} holders
+                      {formatCompact(Number(e.totalAirdropped || 0) / 10 ** (e.rewardDecimals ?? rewardDecimals))}{' '}
+                      ${e.rewardSymbol || rewardSym} → {e.holderCount} holders
                     </span>
                     <span className="flex items-center gap-2">
                       {e.txSignature && (

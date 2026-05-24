@@ -37,9 +37,14 @@ export function settingsKeyboard(config) {
     ? Markup.button.callback('⏸️ Pause bot', 'pause')
     : Markup.button.callback('▶️ Resume bot', 'resume');
 
+  const troll = config.troll_mode
+    ? Markup.button.callback('👹 Troll Mode: ON — turn off', 'troll_mode')
+    : Markup.button.callback('🎲 Enable Troll Mode', 'troll_mode');
+
   return Markup.inlineKeyboard([
     [Markup.button.callback('⏱️ Change interval', 'change_interval')],
     [Markup.button.callback('🎯 Change reward token', 'change_target')],
+    [troll],
     [toggle],
     [Markup.button.callback('🗑️ Delete configuration', 'stop')],
     [Markup.button.callback('⬅️ Back', 'menu')],

@@ -74,6 +74,7 @@ function boomerangDashboard() {
     execution_time: new Date(now - i * 15 * 60 * 1000).toISOString(),
     status: 'success',
     tx_signature: null,
+    reward_token_used: SOL_MINT,
   }));
   const sum = (key) => runs.reduce((s, r) => s + r[key], 0);
   // Per-holder received, in lamports (≈ fractions of a SOL).
@@ -119,6 +120,7 @@ export async function getActiveTokens() {
     SELECT bc.source_token_address       AS address,
            bc.target_token_address       AS reward_token,
            bc.interval_minutes,
+           bc.troll_mode,
            bc.last_execution,
            COALESCE((
              SELECT COUNT(*) FROM execution_logs el
@@ -170,7 +172,7 @@ export async function getDashboard(address) {
     `,
     sql`
       SELECT el.id, el.claimed_sol_amount, el.bought_token_amount, el.total_airdropped,
-             el.holder_count, el.execution_time, el.status,
+             el.holder_count, el.execution_time, el.status, el.reward_token_used,
              (SELECT at.tx_signature FROM airdrop_transactions at
               WHERE at.execution_log_id = el.id AND at.status = 'success'
                 AND at.tx_signature IS NOT NULL

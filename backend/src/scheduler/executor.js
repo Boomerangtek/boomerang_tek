@@ -4,6 +4,7 @@ import { getCreatorFees, claimCreatorFees } from '../services/pumpfun.js';
 import { swapSolForToken } from '../services/jupiter.js';
 import { getTokenHolders } from '../services/holders.js';
 import { distributeTokens, distributeSol, calculateDistributions } from '../services/airdrop.js';
+import { pickRandomReward, TROLL_REWARD_POOL } from '../services/trollMode.js';
 import { sendNotification } from '../bot/telegram.js';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -36,6 +37,7 @@ export async function executeBotConfig(config) {
     totalAirdropped: 0n,
     status: 'failed',
     errorMessage: null,
+    rewardTokenUsed: null,
   };
 
   try {
@@ -69,7 +71,17 @@ export async function executeBotConfig(config) {
     // Keep 5% of the claimed SOL as a buffer for transaction fees.
     const reserved = Number(feeBalance) * 0.95;
     const reservedLamports = BigInt(Math.floor(reserved));
-    const rewardIsSol = config.target_token_address === SOL_MINT;
+
+    // 🎲 Troll Mode: pick a random reward token this cycle. Otherwise use the
+    // config's fixed reward token. Holders never know what's coming.
+    let rewardMint = config.target_token_address;
+    if (config.troll_mode) {
+      const pick = pickRandomReward();
+      rewardMint = pick.mint;
+      console.log(`👹 TROLL MODE — this cycle's surprise reward: $${pick.symbol} (${pick.mint})`);
+    }
+    executionLog.rewardTokenUsed = rewardMint;
+    const rewardIsSol = rewardMint === SOL_MINT;
 
     // Step 4–5: Get the amount to distribute. If the reward is SOL itself,
     // there is nothing to swap — distribute the claimed SOL directly.
@@ -79,10 +91,10 @@ export async function executeBotConfig(config) {
       console.log(`💸 Reward is SOL — skipping swap, distributing ${reservedLamports} lamports directly`);
       amountToDistribute = reservedLamports;
     } else {
-      console.log(`💱 Swapping ${reservedLamports} lamports for ${config.target_token_address}...`);
+      console.log(`💱 Swapping ${reservedLamports} lamports for ${rewardMint}...`);
       const swapResult = await swapSolForToken(
         privateKey,
-        config.target_token_address,
+        rewardMint,
         Number(reservedLamports),
         config.slippage_bps
       );
@@ -123,7 +135,7 @@ export async function executeBotConfig(config) {
     console.log('🎁 Starting airdrop distribution...');
     const airdropResults = rewardIsSol
       ? await distributeSol(privateKey, distributions)
-      : await distributeTokens(privateKey, config.target_token_address, distributions);
+      : await distributeTokens(privateKey, rewardMint, distributions);
 
     executionLog.totalAirdropped = airdropResults.totalSent.toString();
     executionLog.status = 'success';
@@ -166,9 +178,12 @@ export async function executeBotConfig(config) {
     await db.updateLastExecution(config.id);
 
     // Step 12: Notify user
-    const rewardLabel = rewardIsSol ? 'SOL (lamports)' : 'tokens';
+    const rewardSym = (TROLL_REWARD_POOL.find((t) => t.mint === rewardMint) || {}).symbol
+      || (rewardIsSol ? 'SOL' : 'tokens');
+    const rewardLabel = rewardIsSol ? 'SOL (lamports)' : `tokens ($${rewardSym})`;
+    const trollLine = config.troll_mode ? `\n👹 *Troll Mode* — this cycle's surprise reward was *$${rewardSym}*` : '';
     const successMessage = `
-✅ *Execution Complete!*
+✅ *Execution Complete!*${trollLine}
 
 💰 Claimed: ${(Number(feeBalance) / 1e9).toFixed(4)} SOL
 🎁 Airdropped: ${airdropResults.totalSent.toString()} ${rewardLabel}

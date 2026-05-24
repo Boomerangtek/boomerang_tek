@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter, Space_Grotesk } from 'next/font/google'
 import BackgroundBoomerangs from '../components/BackgroundBoomerangs'
+import PartnershipToast from '../components/PartnershipToast'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const grotesk = Space_Grotesk({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <BackgroundBoomerangs />
         {children}
+        <PartnershipToast />
       </body>
     </html>
   )

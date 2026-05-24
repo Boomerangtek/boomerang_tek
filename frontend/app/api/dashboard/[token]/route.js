@@ -19,7 +19,10 @@ export async function GET(request, { params }) {
     const { config, stats, topRecipients, recentExecutions } = data;
     const src = config.source_token_address;
     const tgt = config.target_token_address;
-    const meta = await fetchTokenMeta([src, tgt]);
+    // Include every reward token actually used (Troll Mode varies it per run)
+    // so each run can show its real symbol + decimals.
+    const usedMints = recentExecutions.map((e) => e.reward_token_used).filter(Boolean);
+    const meta = await fetchTokenMeta([src, tgt, ...usedMints]);
     return Response.json({
       sourceToken: { address: src, name: meta[src]?.name || null, symbol: meta[src]?.symbol || null, image: meta[src]?.image || null, marketCap: meta[src]?.marketCap ?? null },
       targetToken: { address: tgt, name: meta[tgt]?.name || null, symbol: meta[tgt]?.symbol || null, image: meta[tgt]?.image || null, marketCap: meta[tgt]?.marketCap ?? null, decimals: meta[tgt]?.decimals ?? null },
@@ -44,10 +47,14 @@ export async function GET(request, { params }) {
         executionTime: e.execution_time,
         status: e.status,
         txSignature: e.tx_signature || null,
+        rewardToken: e.reward_token_used || null,
+        rewardSymbol: e.reward_token_used ? (meta[e.reward_token_used]?.symbol || null) : null,
+        rewardDecimals: e.reward_token_used ? (meta[e.reward_token_used]?.decimals ?? null) : null,
       })),
       config: {
         intervalMinutes: config.interval_minutes,
         isActive: config.is_active,
+        trollMode: Boolean(config.troll_mode),
       },
       timestamp: new Date().toISOString(),
     });

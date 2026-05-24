@@ -96,7 +96,7 @@ export default function ActiveTokens() {
                     <span className="shrink-0 font-mono text-[11px] text-mut">${symbol}</span>
                   </div>
                   <div className="truncate text-xs text-mut">
-                    → ${rewardSymbol} · every {t.intervalMinutes}m
+                    {t.trollMode ? '🎲 Troll Mode' : `→ $${rewardSymbol}`} · every {t.intervalMinutes}m
                     {t.marketCap ? ` · MC $${compact(t.marketCap)}` : ''}
                     {t.distributions > 0 ? ` · ${t.distributions} payouts` : ''}
                   </div>

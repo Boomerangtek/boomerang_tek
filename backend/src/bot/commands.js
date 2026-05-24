@@ -392,7 +392,9 @@ export async function handleSettings(ctx) {
   const text =
     `⚙️ *Settings*\n\n` +
     `⏱️ Interval: every *${config.interval_minutes} min*\n` +
-    `🎯 Reward token: \`${short(config.target_token_address)}\`\n` +
+    (config.troll_mode
+      ? `🎲 Reward: *Troll Mode ON* — randomized every cycle 👹\n`
+      : `🎯 Reward token: \`${short(config.target_token_address)}\`\n`) +
     `📍 ${config.is_active ? '🟢 Running' : '⏸️ Paused'}`;
   try {
     await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboards.settingsKeyboard(config) });
@@ -499,6 +501,24 @@ export async function handleResume(ctx) {
     });
   } catch {
     await ctx.replyWithMarkdown('▶️ *Bot resumed.*', keyboards.dashboardKeyboard(updated));
+  }
+}
+
+// ---------- troll mode ----------
+
+export async function handleToggleTrollMode(ctx) {
+  const { config } = await getUserConfig(ctx.from.id);
+  if (!config) return ctx.answerCbQuery('No config found.');
+  const updated = await db.updateBotConfigTrollMode(config.id, !config.troll_mode);
+  await reschedule(updated);
+  await ctx.answerCbQuery(updated.troll_mode ? '👹 Troll Mode ON' : 'Troll Mode off');
+  const text = updated.troll_mode
+    ? `👹 *Troll Mode activated!*\n\nYour airdrop reward is now *randomized every cycle* — USDC, SOL, $TROLL, BONK, WIF… your holders never know what's coming.\n\nOne thing's guaranteed: they get paid. The other: they get trolled. 🪃`
+    : `✅ *Troll Mode off.*\n\nBack to a fixed reward token: \`${short(updated.target_token_address)}\`.`;
+  try {
+    await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboards.settingsKeyboard(updated) });
+  } catch {
+    await ctx.replyWithMarkdown(text, keyboards.settingsKeyboard(updated));
   }
 }
 

@@ -94,6 +94,17 @@ export async function updateBotConfigTargetToken(configId, targetTokenAddress) {
   return result.rows[0];
 }
 
+export async function updateBotConfigTrollMode(configId, trollMode) {
+  const query = `
+    UPDATE bot_configs
+    SET troll_mode = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING *;
+  `;
+  const result = await pool.query(query, [trollMode, configId]);
+  return result.rows[0];
+}
+
 export async function updateLastExecution(configId) {
   const query = `
     UPDATE bot_configs 
@@ -114,9 +125,9 @@ export async function createExecutionLog(log) {
   const query = `
     INSERT INTO execution_logs (
       config_id, claimed_sol_amount, bought_token_amount,
-      holder_count, total_airdropped, status, error_message
+      holder_count, total_airdropped, status, error_message, reward_token_used
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *;
   `;
   const values = [
@@ -126,7 +137,8 @@ export async function createExecutionLog(log) {
     log.holderCount,
     log.totalAirdropped,
     log.status,
-    log.errorMessage || null
+    log.errorMessage || null,
+    log.rewardTokenUsed || null
   ];
   const result = await pool.query(query, values);
   return result.rows[0];

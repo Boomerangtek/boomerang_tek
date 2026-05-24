@@ -75,6 +75,11 @@ async function migrate() {
     `);
     console.log('✅ Created indexes');
 
+    // Troll Mode — randomized reward token every cycle (idempotent add-ons).
+    await pool.query(`ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS troll_mode BOOLEAN DEFAULT false;`);
+    await pool.query(`ALTER TABLE execution_logs ADD COLUMN IF NOT EXISTS reward_token_used VARCHAR(44);`);
+    console.log('✅ Ensured troll_mode / reward_token_used columns');
+
     console.log('🎉 Migration completed successfully!');
     process.exit(0);
   } catch (error) {
