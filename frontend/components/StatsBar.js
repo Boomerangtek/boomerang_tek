@@ -35,8 +35,8 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
 // Launch floors — shown until on-chain tracking is wired; real data overrides
 // these the moment it exceeds them (see the Live-feed disclaimer).
-const FLOOR_REDISTRIBUTED_USD = 2381;
-const FLOOR_DISTRIBUTIONS = 5;
+const FLOOR_REDISTRIBUTED_USD = 2698;
+const FLOOR_DISTRIBUTIONS = 7;
 
 export default function StatsBar() {
   const ref = useRef(null);
