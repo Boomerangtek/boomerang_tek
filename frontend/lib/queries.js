@@ -53,35 +53,38 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
 function boomerangDashboard() {
   const now = Date.now();
+  // claimed = SOL fees (lamports); air/burn = reward-token counts (1B supply,
+  // so kept to a sane fraction). Fees and token amounts are decoupled — fees
+  // are swapped into the reward token, then airdropped/burned.
   const runs = [
-    { claimed: 1_420_000_000, holders: 41 },
-    { claimed: 1_310_000_000, holders: 39 },
-    { claimed: 1_580_000_000, holders: 44 },
-    { claimed: 1_190_000_000, holders: 33 },
-    { claimed: 1_440_000_000, holders: 38 },
-    { claimed: 1_270_000_000, holders: 29 },
-    { claimed: 1_210_000_000, holders: 26 },
+    { claimed: 1_420_000_000, holders: 41, air: 3_120_000, burn: 1_280_000 },
+    { claimed: 1_310_000_000, holders: 39, air: 2_780_000, burn: 1_140_000 },
+    { claimed: 1_580_000_000, holders: 44, air: 3_360_000, burn: 1_390_000 },
+    { claimed: 1_190_000_000, holders: 33, air: 2_410_000, burn: 980_000 },
+    { claimed: 1_440_000_000, holders: 38, air: 2_950_000, burn: 1_210_000 },
+    { claimed: 1_270_000_000, holders: 29, air: 2_240_000, burn: 920_000 },
+    { claimed: 1_210_000_000, holders: 26, air: 1_980_000, burn: 810_000 },
   ];
   const recentExecutions = runs.map((r, i) => ({
     id: 9001 + i,
     claimed_sol_amount: String(r.claimed),
-    bought_token_amount: String(Math.round(r.claimed * 0.3)),
-    total_airdropped: String(Math.round(r.claimed * 0.7)),
+    bought_token_amount: String(r.burn),
+    total_airdropped: String(r.air),
     holder_count: r.holders,
     execution_time: new Date(now - i * 15 * 60 * 1000).toISOString(),
     status: 'success',
   }));
-  const totalClaimed = runs.reduce((s, r) => s + r.claimed, 0);
+  const sum = (key) => runs.reduce((s, r) => s + r[key], 0);
   const recipients = [
-    ['9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', 902_300_000, 7],
-    ['5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1', 781_500_000, 6],
-    ['2ojv9BAiHUrvsm9gxDe7fJSzbNZSJcxZvf8dqmWGHG8S', 690_100_000, 7],
-    ['EHcfgVWVf2k8Z9YsPjqkLTGMcRpWh2v9D6m4cBuTr5kP', 612_800_000, 5],
-    ['7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', 540_200_000, 6],
-    ['DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1', 471_900_000, 4],
-    ['Ckjp1bUmZc8Ph9q5VfYpn4xkRZ7e3oJYwT5sNr2HmGxa', 388_400_000, 5],
-    ['BPFLoVKB3pWq7gFLp4HpgVS5qZ6m1nWtN8s4kqjY3uDe', 305_700_000, 3],
-    ['Gd2Y7K4nWxR1mLpUvZc6tQ3jXeH9bFa5sN8rDkM2qVwT', 247_100_000, 4],
+    ['9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', 3_420_000, 7],
+    ['5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1', 2_810_000, 6],
+    ['2ojv9BAiHUrvsm9gxDe7fJSzbNZSJcxZvf8dqmWGHG8S', 2_460_000, 7],
+    ['EHcfgVWVf2k8Z9YsPjqkLTGMcRpWh2v9D6m4cBuTr5kP', 1_930_000, 5],
+    ['7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', 1_540_000, 6],
+    ['DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1', 1_180_000, 4],
+    ['Ckjp1bUmZc8Ph9q5VfYpn4xkRZ7e3oJYwT5sNr2HmGxa', 880_000, 5],
+    ['BPFLoVKB3pWq7gFLp4HpgVS5qZ6m1nWtN8s4kqjY3uDe', 610_000, 3],
+    ['Gd2Y7K4nWxR1mLpUvZc6tQ3jXeH9bFa5sN8rDkM2qVwT', 420_000, 4],
   ];
   return {
     config: {
@@ -91,9 +94,9 @@ function boomerangDashboard() {
       is_active: true,
     },
     stats: {
-      total_airdropped: String(Math.round(totalClaimed * 0.7)),
-      total_bought_back: String(Math.round(totalClaimed * 0.3)),
-      total_sol_claimed: String(totalClaimed),
+      total_airdropped: String(sum('air')),
+      total_bought_back: String(sum('burn')),
+      total_sol_claimed: String(sum('claimed')),
       execution_count: runs.length,
       last_execution: recentExecutions[0].execution_time,
     },
