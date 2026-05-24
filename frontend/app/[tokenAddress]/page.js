@@ -109,11 +109,17 @@ export default function TokenDashboard() {
 
   const solClaimed = (Number(data.stats.totalSolClaimed) / 1e9).toFixed(3);
 
+  // Reward-token amounts are stored in raw base units — convert with the
+  // reward token's decimals so we show real token counts, not huge integers.
+  const rewardDecimals = Number(data.targetToken.decimals ?? 0);
+  const toUnits = (raw) => Number(raw || 0) / 10 ** rewardDecimals;
+  const rewardSym = tokenLabel(data.targetToken);
+
   const STATS = [
     { Icon: Coins, label: 'Fees claimed', value: `${solClaimed} SOL`, accent: true },
     { Icon: Bolt, label: 'Distributions', value: formatNumber(data.stats.totalExecutions) },
-    { Icon: Swap, label: 'Bought back', value: formatNumber(data.stats.totalBoughtBack) },
-    { Icon: Gift, label: 'Airdropped', value: formatNumber(data.stats.totalAirdropped) },
+    { Icon: Swap, label: 'Bought back', value: formatCompact(toUnits(data.stats.totalBoughtBack)) },
+    { Icon: Gift, label: 'Airdropped', value: formatCompact(toUnits(data.stats.totalAirdropped)) },
   ];
 
   return (
@@ -210,7 +216,7 @@ export default function TokenDashboard() {
               </div>
             </div>
             {data.recentExecutions.length > 0 ? (
-              <PerformanceChart data={data.recentExecutions} timeRange={timeRange} symbol={tokenLabel(data.targetToken)} />
+              <PerformanceChart data={data.recentExecutions} timeRange={timeRange} symbol={rewardSym} decimals={rewardDecimals} />
             ) : (
               <div className="flex h-64 items-center justify-center text-sm text-mut">
                 No execution data yet
@@ -268,7 +274,9 @@ export default function TokenDashboard() {
                     <span className="font-mono text-sm text-fg">{shortenAddress(r.address)}</span>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-fg">{formatNumber(r.totalReceived)}</p>
+                    <p className="text-sm font-semibold text-fg">
+                      {formatCompact(toUnits(r.totalReceived))} ${rewardSym}
+                    </p>
                     <p className="text-xs text-mut">{r.airdropCount} drops</p>
                   </div>
                 </div>
@@ -295,7 +303,7 @@ export default function TokenDashboard() {
                   </div>
                   <div className="flex justify-between text-xs text-mut">
                     <span>
-                      {formatNumber(e.totalAirdropped)} ${tokenLabel(data.targetToken)} → {e.holderCount} holders
+                      {formatCompact(toUnits(e.totalAirdropped))} ${rewardSym} → {e.holderCount} holders
                     </span>
                     <span className="flex items-center gap-2">
                       {e.txSignature && (

@@ -2,10 +2,12 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function PerformanceChart({ data, timeRange = '1w', symbol = 'tokens' }) {
+export default function PerformanceChart({ data, timeRange = '1w', symbol = 'tokens', decimals = 0 }) {
+  const divisor = 10 ** Number(decimals || 0);
   // Transform execution data for chart. Include the time-of-day in the label so
   // runs on the same day are distinct points (otherwise they collapse onto one
-  // x category and the curve/tooltip break).
+  // x category and the curve/tooltip break). Amounts are raw base units →
+  // divide by the reward token's decimals.
   const chartData = data.map(exec => ({
     time: new Date(exec.executionTime).toLocaleString('en-US', {
       month: 'short',
@@ -13,7 +15,7 @@ export default function PerformanceChart({ data, timeRange = '1w', symbol = 'tok
       hour: '2-digit',
       minute: '2-digit',
     }),
-    airdropped: Number(exec.totalAirdropped),
+    airdropped: Number(exec.totalAirdropped) / divisor,
     timestamp: new Date(exec.executionTime).getTime(),
   })).reverse(); // Reverse to show oldest to newest
 
@@ -23,7 +25,7 @@ export default function PerformanceChart({ data, timeRange = '1w', symbol = 'tok
         <div className="rounded-lg border border-line bg-night-900 p-3 shadow-soft">
           <p className="text-xs text-mut">{payload[0].payload.time}</p>
           <p className="text-sm font-semibold text-boom-700">
-            {new Intl.NumberFormat('en-US').format(payload[0].value)}
+            {new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(payload[0].value)}
             {symbol ? ` $${symbol}` : ' tokens'}
           </p>
         </div>
@@ -49,7 +51,9 @@ export default function PerformanceChart({ data, timeRange = '1w', symbol = 'tok
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+            tickFormatter={(value) =>
+              new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+            }
           />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#34D399', strokeOpacity: 0.3 }} />
           <Area

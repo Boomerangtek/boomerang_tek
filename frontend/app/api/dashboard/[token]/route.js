@@ -22,7 +22,7 @@ export async function GET(request, { params }) {
     const meta = await fetchTokenMeta([src, tgt]);
     return Response.json({
       sourceToken: { address: src, name: meta[src]?.name || null, symbol: meta[src]?.symbol || null, image: meta[src]?.image || null, marketCap: meta[src]?.marketCap ?? null },
-      targetToken: { address: tgt, name: meta[tgt]?.name || null, symbol: meta[tgt]?.symbol || null, image: meta[tgt]?.image || null, marketCap: meta[tgt]?.marketCap ?? null },
+      targetToken: { address: tgt, name: meta[tgt]?.name || null, symbol: meta[tgt]?.symbol || null, image: meta[tgt]?.image || null, marketCap: meta[tgt]?.marketCap ?? null, decimals: meta[tgt]?.decimals ?? null },
       stats: {
         totalAirdropped: stats.total_airdropped || '0',
         totalBoughtBack: stats.total_bought_back || '0',

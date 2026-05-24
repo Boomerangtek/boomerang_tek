@@ -21,6 +21,7 @@ async function fromJupiter(mints, map) {
         symbol: t.symbol || null,
         image: t.icon || null,
         marketCap: t.mcap ?? t.fdv ?? null,
+        decimals: typeof t.decimals === 'number' ? t.decimals : null,
       };
     }
   } catch {
@@ -60,6 +61,7 @@ async function fromDexScreener(mints, map) {
         symbol: cur.symbol || v.meta.symbol,
         image: cur.image || v.meta.image,
         marketCap: cur.marketCap ?? v.meta.marketCap,
+        decimals: cur.decimals ?? null,
       };
     }
   } catch {
