@@ -39,6 +39,7 @@ export async function GET(request, { params }) {
         holderCount: e.holder_count,
         executionTime: e.execution_time,
         status: e.status,
+        txSignature: e.tx_signature || null,
       })),
       config: {
         intervalMinutes: config.interval_minutes,

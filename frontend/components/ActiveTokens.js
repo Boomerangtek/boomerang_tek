@@ -6,26 +6,26 @@ import { resolveToken } from '../lib/tokens';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
-/** Coin avatar: CDN logo, falling back to a colored ticker badge. */
-function Coin({ mint, size = 'h-9 w-9' }) {
-  const token = resolveToken(mint);
-  const [ok, setOk] = useState(Boolean(token.logo));
-  if (ok) {
+/** Coin avatar: real image → DexScreener CDN → colored ticker badge. */
+function Coin({ mint, image }) {
+  const fallback = resolveToken(mint);
+  const [src, setSrc] = useState(image || fallback.logo);
+  if (src) {
     return (
       <img
-        src={token.logo}
-        alt={token.symbol}
-        onError={() => setOk(false)}
-        className={`${size} shrink-0 rounded-full border border-line bg-night-850 object-cover`}
+        src={src}
+        alt=""
+        onError={() => setSrc(src === image ? fallback.logo : null)}
+        className="h-8 w-8 shrink-0 rounded-full border border-line bg-night-850 object-cover"
       />
     );
   }
   return (
     <div
-      className={`${size} flex shrink-0 items-center justify-center rounded-full border border-line text-[10px] font-extrabold text-white`}
-      style={{ background: token.color }}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line text-[10px] font-extrabold text-white"
+      style={{ background: fallback.color }}
     >
-      {token.symbol.replace('$', '').slice(0, 3)}
+      {fallback.symbol.replace('$', '').slice(0, 3)}
     </div>
   );
 }
@@ -54,15 +54,12 @@ export default function ActiveTokens() {
 
   return (
     <div id="bots" className="scroll-mt-20">
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <div>
-          <div className="eyebrow mb-2">Live</div>
+          <div className="eyebrow mb-1">Live</div>
           <h2 className="font-display text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
             Tokens running Boomerang
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-mut">
-            Every token below has the bot active right now, paying holders on a schedule.
-          </p>
         </div>
         <span className="chip shrink-0 text-boom-700">
           <span className="relative flex h-2 w-2">
@@ -74,32 +71,33 @@ export default function ActiveTokens() {
       </div>
 
       {tokens.length === 0 ? (
-        <div className="panel px-6 py-12 text-center text-sm text-mut">
-          No active bots right now.
-        </div>
+        <div className="panel px-6 py-10 text-center text-sm text-mut">No active bots right now.</div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="panel divide-y divide-line/70 overflow-hidden">
           {tokens.map((t) => {
-            const source = resolveToken(t.address);
-            const reward = resolveToken(t.rewardToken);
+            const symbol = t.symbol || resolveToken(t.address).symbol;
+            const rewardSymbol = t.rewardSymbol || resolveToken(t.rewardToken).symbol;
             return (
               <Link
                 key={t.address}
                 href={`/${t.address}`}
-                className="panel card-fun flex items-center gap-3 p-4 hover:border-boom-300"
+                className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-boom-50"
               >
-                <Coin mint={t.address} />
+                <Coin mint={t.address} image={t.image} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 text-sm font-semibold text-fg">
-                    <span className="truncate">${source.symbol}</span>
-                    <span className="text-mut">→ ${reward.symbol}</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="truncate text-sm font-semibold text-fg">
+                      {t.name || `$${symbol}`}
+                    </span>
+                    <span className="shrink-0 font-mono text-[11px] text-mut">${symbol}</span>
                   </div>
-                  <div className="mt-0.5 text-xs text-mut">
-                    every {t.intervalMinutes} min
+                  <div className="truncate text-xs text-mut">
+                    → ${rewardSymbol} · every {t.intervalMinutes}m
                     {t.distributions > 0 ? ` · ${t.distributions} payouts` : ''}
                   </div>
                 </div>
-                <span className="shrink-0 rounded-full bg-boom-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-boom-700">
+                <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold text-boom-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-boom-500" />
                   Active
                 </span>
               </Link>

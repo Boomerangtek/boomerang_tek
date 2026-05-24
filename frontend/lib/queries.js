@@ -73,6 +73,7 @@ function boomerangDashboard() {
     holder_count: r.holders,
     execution_time: new Date(now - i * 15 * 60 * 1000).toISOString(),
     status: 'success',
+    tx_signature: null,
   }));
   const sum = (key) => runs.reduce((s, r) => s + r[key], 0);
   const recipients = [
@@ -172,7 +173,11 @@ export async function getDashboard(address) {
     `,
     sql`
       SELECT el.id, el.claimed_sol_amount, el.bought_token_amount, el.total_airdropped,
-             el.holder_count, el.execution_time, el.status
+             el.holder_count, el.execution_time, el.status,
+             (SELECT at.tx_signature FROM airdrop_transactions at
+              WHERE at.execution_log_id = el.id AND at.status = 'success'
+                AND at.tx_signature IS NOT NULL
+              LIMIT 1) AS tx_signature
       FROM execution_logs el
       JOIN bot_configs bc ON el.config_id = bc.id
       WHERE bc.source_token_address = ${address} AND el.status = 'success'

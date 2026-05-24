@@ -101,6 +101,15 @@ export default function TokenDashboard() {
             <span className={`h-1.5 w-1.5 rounded-full ${data.config.isActive ? 'bg-boom-400' : 'bg-mut'}`} />
             {data.config.isActive ? 'Active' : 'Paused'} · every {data.config.intervalMinutes} min
           </span>
+          <a
+            href={`https://solscan.io/token/${data.sourceToken.address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-ghost px-3 py-1.5 text-xs"
+          >
+            View on Solscan
+            <Arrow className="h-3.5 w-3.5" />
+          </a>
         </div>
 
         {/* Stat cards */}
@@ -215,7 +224,20 @@ export default function TokenDashboard() {
                   </div>
                   <div className="flex justify-between text-xs text-mut">
                     <span>{formatNumber(e.totalAirdropped)} tokens</span>
-                    <span>to {e.holderCount} holders</span>
+                    <span className="flex items-center gap-2">
+                      to {e.holderCount} holders
+                      {e.txSignature && (
+                        <a
+                          href={`https://solscan.io/tx/${e.txSignature}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(ev) => ev.stopPropagation()}
+                          className="font-medium text-boom-700 hover:underline"
+                        >
+                          Solscan ↗
+                        </a>
+                      )}
+                    </span>
                   </div>
                 </div>
               ))}
