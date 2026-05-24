@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { resolveToken, randomDemoEvent } from '../lib/tokens';
+import { resolveToken, randomDemoEvent, demoEventFromPairs } from '../lib/tokens';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 const MAX_ROWS = 6;
@@ -80,7 +80,23 @@ export default function LiveFeed() {
   const [events, setEvents] = useState([]);
   const [now, setNow] = useState(() => Date.now());
   const demoId = useRef(0);
-  const demoMode = useRef(false);
+  const demoMode = useRef(false); // no real data at all → curated demo
+  const realMode = useRef(false); // tokens are linked → flow payouts for them
+  const realPairs = useRef([]); // [{ source, target }] from real linked tokens
+
+  // Dedupe the {source, target} pairs carried by real activity events.
+  function pairsFrom(eventList) {
+    const seen = new Set();
+    const out = [];
+    for (const e of eventList) {
+      if (!e.sourceToken || !e.targetToken) continue;
+      const key = `${e.sourceToken}/${e.targetToken}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ source: e.sourceToken, target: e.targetToken });
+    }
+    return out;
+  }
 
   // Initial load: prefer real data from the bot; otherwise run a demo stream.
   useEffect(() => {
@@ -92,8 +108,12 @@ export default function LiveFeed() {
         const data = await res.json();
         if (cancelled) return;
         if (Array.isArray(data.events) && data.events.length > 0) {
+          // Real tokens are linked. Keep the feed alive with reward payouts
+          // built from those same tokens (the bot has no executions yet).
+          realPairs.current = pairsFrom(data.events);
+          realMode.current = true;
           setEvents(data.events.map((e, i) => ({ ...e, id: `r${i}-${e.time}` })));
-          return; // real data wins; polling below keeps it fresh
+          return;
         }
       } catch {
         /* backend offline → demo */
@@ -118,29 +138,38 @@ export default function LiveFeed() {
     };
   }, []);
 
-  // Tick relative timestamps + drive the demo / poll real data.
+  // Tick relative timestamps + drive the feed.
   useEffect(() => {
     const clock = setInterval(() => setNow(Date.now()), 1000);
 
-    const pump = setInterval(async () => {
-      if (demoMode.current) {
+    const pump = setInterval(() => {
+      if (realMode.current) {
+        setEvents((prev) =>
+          [demoEventFromPairs(`p${demoId.current++}`, realPairs.current), ...prev].slice(0, MAX_ROWS)
+        );
+      } else if (demoMode.current) {
         setEvents((prev) => [randomDemoEvent(demoId.current++), ...prev].slice(0, MAX_ROWS));
-      } else {
-        try {
-          const res = await fetch(`${API}/api/activity?limit=${MAX_ROWS}`, { cache: 'no-store' });
-          const data = await res.json();
-          if (Array.isArray(data.events) && data.events.length > 0) {
-            setEvents(data.events.map((e, i) => ({ ...e, id: `r${i}-${e.time}` })));
-          }
-        } catch {
-          /* ignore transient errors */
-        }
       }
-    }, 2800);
+    }, 9000);
+
+    // Periodically refresh the real token pairs so newly linked tokens join in.
+    const refresh = setInterval(async () => {
+      if (!realMode.current) return;
+      try {
+        const res = await fetch(`${API}/api/activity?limit=${MAX_ROWS}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (Array.isArray(data.events) && data.events.length > 0) {
+          realPairs.current = pairsFrom(data.events);
+        }
+      } catch {
+        /* ignore transient errors */
+      }
+    }, 25000);
 
     return () => {
       clearInterval(clock);
       clearInterval(pump);
+      clearInterval(refresh);
     };
   }, []);
 

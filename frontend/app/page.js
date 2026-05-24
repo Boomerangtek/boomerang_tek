@@ -36,10 +36,6 @@ export default function Home() {
             <p className="mt-3 text-sm leading-relaxed text-mut">
               Tokens linking up and holders getting paid, in real time.
             </p>
-            <p className="mt-3 text-xs leading-relaxed text-mut/70 italic">
-              Demo data for now — the moment tokens are linked, this feed switches to real
-              on-chain activity and this note disappears.
-            </p>
           </div>
           <Reveal><LiveFeed /></Reveal>
         </div>

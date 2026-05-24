@@ -45,3 +45,19 @@ export function randomDemoEvent(id) {
     time: new Date().toISOString(),
   };
 }
+
+// Once tokens are really linked, keep the feed flowing with reward payouts
+// built from those same real token pairs (biased toward "paid" events).
+export function demoEventFromPairs(id, pairs, paidBias = 0.72) {
+  if (!pairs || pairs.length === 0) return randomDemoEvent(id);
+  const { source, target } = pairs[Math.floor(Math.random() * pairs.length)];
+  const isPaid = Math.random() < paidBias;
+  return {
+    id,
+    type: isPaid ? 'paid' : 'linked',
+    sourceToken: source,
+    targetToken: target,
+    holderCount: isPaid ? 40 + Math.floor(Math.random() * 900) : null,
+    time: new Date().toISOString(),
+  };
+}
