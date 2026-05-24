@@ -1,274 +1,163 @@
+<div align="center">
+
 # Boomerang 🪃
 
-Your fees always come back! Automated PumpFun volume fee redistribution bot. Claims fees, buys tokens, and airdrops proportionally to holders.
+### Your fees always come back.
+
+**Boomerang turns PumpFun creator fees into automatic, on-chain rewards for your holders.**
+Claim → swap → airdrop, every few minutes, fully automated. Set it once on Telegram; your community watches it happen on a live public dashboard.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Solana](https://img.shields.io/badge/Solana-Mainnet-14F195?logo=solana&logoColor=white)](https://solana.com)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 
-## ✨ Features
-
-- 🤖 **Telegram Bot Interface** - Easy setup and management
-- 📊 **Public Dashboards** - Live stats at boomerang.com/[your-token]
-- 🔐 **AES-256 Encryption** - Secure private key storage
-- ⏱️ **Customizable Intervals** - 1, 2, 5, 10, 30, or 60 minutes
-- 💰 **Auto Fee Claiming** - Automatic PumpFun fee collection
-- 🔄 **Best Swap Prices** - Jupiter Aggregator integration
-- 📊 **Real-time Data** - Birdeye API for holder information
-- 🎁 **Fair Distribution** - Proportional token airdrops
-- 📈 **Complete Logging** - Track every execution
-
-## 🚀 Quick Start
-
-**Get running in under 10 minutes!** See [QUICKSTART.md](QUICKSTART.md)
-
-```bash
-# 1. Install dependencies
-cd backend && npm install
-
-# 2. Set up environment
-cp .env.example .env
-# Edit .env with your values
-
-# 3. Run migrations
-npm run migrate
-
-# 4. Start the bot
-npm run dev
-```
-
-## 📖 Documentation
-
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 10 minutes
-- **[TESTING.md](TESTING.md)** - Complete testing guide for devnet
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
-- **[SECURITY.md](SECURITY.md)** - Security best practices
-
-## 🏗️ Architecture
-
-```mermaid
-graph TB
-    User[Token Creator] -->|Commands| TG[Telegram Bot]
-    TG -->|Store Config| DB[(PostgreSQL)]
-    TG -->|Schedule| Cron[Scheduler]
-    
-    Cron -->|Every Interval| Exec[Executor]
-    
-    Exec -->|1. Claim Fees| Pump[PumpFun SDK]
-    Exec -->|2. Swap SOL| Jupiter[Jupiter API]
-    Exec -->|3. Get Holders| Birdeye[Birdeye API]
-    Exec -->|4. Airdrop| Solana[Solana Web3]
-    
-    Exec -->|Log Results| DB
-    Exec -->|Notify| User
-```
-
-## 💻 Tech Stack
-
-**Backend:**
-- Node.js + Express
-- Telegraf (Telegram)
-- @pump-fun/pump-sdk
-- @solana/web3.js
-- Jupiter Aggregator
-- Birdeye API
-- Neon PostgreSQL
-
-**Frontend:**
-- Next.js 14
-- Tailwind CSS
-- React 18
-
-## 🔧 Project Structure
-
-```
-emissionbot/
-├── backend/
-│   ├── src/
-│   │   ├── bot/           # Telegram bot (commands, keyboards)
-│   │   ├── services/      # Core services (PumpFun, Jupiter, etc.)
-│   │   ├── scheduler/     # Cron scheduler + executor
-│   │   ├── db/            # Database (connection, queries, migrations)
-│   │   ├── api/           # REST API endpoints
-│   │   └── index.js       # Main entry point
-│   └── package.json
-├── frontend/
-│   ├── app/              # Next.js pages
-│   ├── components/       # React components
-│   └── package.json
-├── README.md             # This file
-├── QUICKSTART.md         # Quick start guide
-├── TESTING.md            # Testing guide
-├── DEPLOYMENT.md         # Deployment guide
-└── SECURITY.md           # Security guide
-```
-
-## 🎯 How It Works
-
-1. **Setup** - User configures bot via Telegram with:
-   - Dev wallet private key (encrypted)
-   - Source token address (PumpFun token)
-   - Target token address (token to buy & airdrop)
-   - Execution interval
-
-2. **Automated Execution** - Bot runs on schedule:
-   - Checks for unclaimed PumpFun fees
-   - Claims fees to dev wallet
-   - Swaps SOL for target token (via Jupiter)
-   - Gets current holders (via Birdeye)
-   - Calculates proportional distribution
-   - Executes batched airdrops
-
-3. **Monitoring** - User receives Telegram notifications:
-   - Execution success/failure
-   - Amount claimed and distributed
-   - Number of holders reached
-   - Transaction signatures
-   - Link to public dashboard
-
-4. **Public Dashboard** - Every token gets a public page:
-   - Live stats and execution history
-   - Top recipients leaderboard
-   - Total fees claimed and distributed
-   - Share with your community for transparency
-
-## 🔐 Security
-
-- **AES-256-GCM encryption** for all private keys
-- **Parameterized SQL queries** to prevent injection
-- **Rate limiting** on API endpoints
-- **SSL/TLS** for all connections
-- **No logging** of sensitive data
-- **Memory-only** key decryption
-
-See [SECURITY.md](SECURITY.md) for complete security documentation.
-
-## 📊 Database Schema
-
-```sql
-users                   # Telegram users
-├── id
-├── telegram_id
-├── username
-└── created_at
-
-bot_configs             # Bot configurations
-├── id
-├── user_id
-├── dev_wallet_encrypted  # AES-256 encrypted
-├── source_token_address
-├── target_token_address
-├── interval_minutes
-└── is_active
-
-execution_logs          # Execution history
-├── id
-├── config_id
-├── claimed_sol_amount
-├── bought_token_amount
-├── holder_count
-├── status
-└── execution_time
-
-airdrop_transactions    # Detailed airdrop records
-├── id
-├── execution_log_id
-├── holder_address
-├── airdrop_amount
-├── tx_signature
-└── status
-```
-
-## 🧪 Testing
-
-**Always test on devnet first!**
-
-```bash
-# Set up devnet environment
-SOLANA_RPC_URL=https://api.devnet.solana.com
-SOLANA_NETWORK=devnet
-
-# Get devnet SOL
-# Visit: https://faucet.solana.com
-
-# Run tests
-npm run dev
-```
-
-See [TESTING.md](TESTING.md) for complete testing guide.
-
-## 🚢 Deployment
-
-Deploy to production in 3 steps:
-
-1. **Database** - Neon PostgreSQL (free tier available)
-2. **Backend** - Railway or Render ($5-10/month)
-3. **Frontend** - Vercel (free)
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment guide.
-
-## 💡 Usage Example
-
-```bash
-# User opens Telegram bot
-/start
-
-# Sets up configuration
-/setup
-> Sends private key (auto-deleted)
-> Enters source token: Hfp9...xyz
-> Enters target token: So11...112 (SOL)
-> Selects interval: 30 minutes
-
-# Bot runs automatically
-✅ Execution Complete!
-💰 Claimed: 0.5 SOL
-💱 Bought: 1,234,567 tokens
-👥 Airdropped to: 150/150 holders
-
-# Check status anytime
-/status
-```
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Test thoroughly on devnet
-4. Submit a pull request
-
-## ⚠️ Disclaimer
-
-This bot handles real funds and private keys. Use at your own risk. Always:
-- Test thoroughly on devnet first
-- Start with small amounts
-- Keep your encryption keys secure
-- Monitor executions closely
-- Have a backup plan
-
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- **Pump.fun**: https://pump.fun
-- **Jupiter**: https://jup.ag
-- **Birdeye**: https://birdeye.so
-- **Solana**: https://solana.com
-- **Neon**: https://neon.tech
-
-## 📞 Support
-
-For issues or questions:
-1. Check documentation first
-2. Review logs for errors
-3. Test on devnet
-4. Open an issue with details
+</div>
 
 ---
 
-**Built with ❤️ for PumpFun token creators on Solana**
+## What it does
 
-Your fees always come back, like a boomerang! 🪃
+Every PumpFun token earns **creator fees** in SOL as it trades. Most of that just sits in a vault. Boomerang puts it to work:
 
-🚀 [Get Started Now](QUICKSTART.md) | 📖 [Read the Docs](TESTING.md) | 🔐 [Security Guide](SECURITY.md)
+1. **🪙 Claims** the unclaimed creator fees from your dev wallet.
+2. **🔁 Swaps** them into a reward token of your choice (any SPL / Token-2022 token — or keep it in **SOL**).
+3. **🎁 Airdrops** the reward **pro-rata to every holder** of your token.
+4. **♻️ Repeats** on your schedule — 2, 5, 10, 30 or 60 minutes — forever.
+
+Holders get paid just for holding. The flywheel rewards holding, holding supports the chart, the chart drives volume, volume generates more fees. Like a boomerang, **it always comes back.**
+
+---
+
+## ✨ Highlights
+
+- 🤖 **Telegram-native setup** — link a token and start rewarding holders in under a minute.
+- 🌐 **Live public dashboards** — every token gets `/<mint>` with real-time stats, top recipients, a payout chart, **countdown to the next distribution**, market cap, and **Solscan links** to the actual airdrop transactions.
+- 📡 **"Tokens running Boomerang"** — a homepage feed of every live bot, sorted by market cap, with real names + logos.
+- 🔗 **No third-party holder API** — holders are read **straight from the Solana RPC**, auto-detecting **classic SPL _and_ Token-2022** mints, and skipping pools / bonding-curve PDAs.
+- 💱 **Best-price swaps** via the Jupiter aggregator.
+- 💸 **Native-SOL _and_ SPL/Token-2022 airdrops** — decimals-aware, batched, with dust reassigned so nothing is stranded.
+- 🔐 **AES-256-GCM** encrypted dev-wallet keys; decrypted in memory only, at execution time.
+- 📝 **Full audit trail** — every claim, swap and transfer is logged with signatures.
+
+---
+
+## 🔄 How the loop works
+
+```mermaid
+graph LR
+    A[⏰ Scheduler tick] --> B[💰 Claim creator fees<br/>PumpFun SDK]
+    B --> C{Reward token<br/>= SOL?}
+    C -->|No| D[💱 Swap SOL → reward<br/>Jupiter]
+    C -->|Yes| E[Skip swap]
+    D --> F[👥 Fetch holders<br/>Solana RPC · SPL + Token-2022]
+    E --> F
+    F --> G[📊 Pro-rata split<br/>by holder balance]
+    G --> H[🎁 Batched airdrop<br/>native SOL or transferChecked]
+    H --> I[🗄️ Log + notify + dashboard]
+    I --> A
+```
+
+---
+
+## 💻 Tech stack
+
+| Layer | Stack |
+|---|---|
+| **Backend** | Node.js · Express · Telegraf · `@solana/web3.js` · `@solana/spl-token` · `@pump-fun/pump-sdk` · Jupiter API · `node-cron` |
+| **Frontend** | Next.js 14 · React 18 · Tailwind CSS · Recharts |
+| **Data** | Neon (PostgreSQL) |
+| **Metadata** | Jupiter token API + DexScreener (names, logos, market cap) |
+| **Infra** | Helius RPC (mainnet) · Vercel (frontend) |
+
+---
+
+## 🗂️ Project structure
+
+```
+boomerang/
+├── backend/
+│   └── src/
+│       ├── bot/            # Telegram bot (commands, keyboards, flows)
+│       ├── services/
+│       │   ├── pumpfun.js    # claim creator fees
+│       │   ├── jupiter.js    # SOL → reward-token swaps
+│       │   ├── holders.js    # RPC holder scan (SPL + Token-2022, pool-aware)
+│       │   ├── airdrop.js    # native SOL + SPL/Token-2022 distribution
+│       │   └── encryption.js # AES-256-GCM key handling
+│       ├── scheduler/      # cron + executor (the loop)
+│       ├── db/             # Neon connection, queries, migrations
+│       └── api/            # REST endpoints
+└── frontend/
+    ├── app/               # Next.js routes + API (/api/v1/*, dashboards)
+    ├── components/        # LiveFeed, ActiveTokens, Countdown, charts…
+    └── lib/               # shared queries + token metadata
+```
+
+---
+
+## 🚀 Quick start
+
+> Requires Node 20+, a Neon (or any Postgres) database, and a Solana mainnet RPC (e.g. Helius).
+
+```bash
+# Backend
+cd backend
+npm install
+cp .env.example .env        # fill in DATABASE_URL, SOLANA_RPC_URL, TELEGRAM_BOT_TOKEN, MASTER_ENCRYPTION_KEY
+npm run migrate
+npm run dev                 # starts the API + Telegram bot + scheduler
+
+# Frontend
+cd ../frontend
+npm install
+npm run dev                 # http://localhost:3001
+```
+
+Generate an encryption key:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+See **[QUICKSTART.md](QUICKSTART.md)** · **[DEPLOYMENT.md](DEPLOYMENT.md)** · **[SECURITY.md](SECURITY.md)**.
+
+---
+
+## 🔌 Public API
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/v1/tokens` | All tokens with an active bot (name, logo, market cap, interval, payouts), sorted by market cap |
+| `GET /api/v1/stats` | Global stats — users, active bots, total distributions |
+| `GET /api/dashboard/<mint>` | Full per-token dashboard data (stats, top recipients, recent runs, reward token + decimals) |
+| `GET /api/activity` | Live activity feed with token metadata |
+
+---
+
+## 🔐 Security
+
+- **AES-256-GCM** encryption for every dev-wallet private key; decrypted only in memory, only at execution.
+- Parameterized SQL everywhere; secrets live in `.env` (never committed).
+- A dev wallet should be **dedicated and disposable** — never your main wallet.
+
+See **[SECURITY.md](SECURITY.md)** for the full model.
+
+---
+
+## ⚠️ Disclaimer
+
+Boomerang handles real funds and private keys on Solana mainnet. Use at your own risk: start small, use a dedicated dev wallet, keep your `MASTER_ENCRYPTION_KEY` safe, and monitor executions.
+
+---
+
+## 📝 License
+
+MIT — see [LICENSE](LICENSE).
+
+<div align="center">
+
+**Built for PumpFun creators on Solana.**
+Your fees always come back, like a boomerang. 🪃
+
+</div>
