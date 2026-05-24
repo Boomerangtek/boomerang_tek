@@ -40,9 +40,20 @@ function Coin({ token, size = 'h-9 w-9' }) {
   );
 }
 
-function Row({ event, now }) {
-  const target = resolveToken(event.targetToken);
-  const source = resolveToken(event.sourceToken);
+// Merge curated/fallback token info with real DexScreener metadata.
+function disp(mint, meta) {
+  const base = resolveToken(mint);
+  const m = meta?.[mint];
+  return {
+    symbol: m?.symbol || base.symbol,
+    logo: m?.image || base.logo,
+    color: base.color,
+  };
+}
+
+function Row({ event, now, meta }) {
+  const target = disp(event.targetToken, meta);
+  const source = disp(event.sourceToken, meta);
   const isPaid = event.type === 'paid';
 
   return (
@@ -78,6 +89,7 @@ function Row({ event, now }) {
 
 export default function LiveFeed() {
   const [events, setEvents] = useState([]);
+  const [meta, setMeta] = useState({});
   const [now, setNow] = useState(() => Date.now());
   const demoId = useRef(0);
   const demoMode = useRef(false); // no real data at all → curated demo
@@ -112,6 +124,7 @@ export default function LiveFeed() {
           // built from those same tokens (the bot has no executions yet).
           realPairs.current = pairsFrom(data.events);
           realMode.current = true;
+          if (data.meta) setMeta((prev) => ({ ...prev, ...data.meta }));
           setEvents(data.events.map((e, i) => ({ ...e, id: `r${i}-${e.time}` })));
           return;
         }
@@ -167,6 +180,7 @@ export default function LiveFeed() {
         const data = await res.json();
         if (Array.isArray(data.events) && data.events.length > 0) {
           realPairs.current = pairsFrom(data.events);
+          if (data.meta) setMeta((prev) => ({ ...prev, ...data.meta }));
         }
       } catch {
         /* ignore transient errors */
@@ -195,7 +209,7 @@ export default function LiveFeed() {
 
       <ul>
         {events.map((e) => (
-          <Row key={e.id} event={e} now={now} />
+          <Row key={e.id} event={e} now={now} meta={meta} />
         ))}
       </ul>
     </div>
