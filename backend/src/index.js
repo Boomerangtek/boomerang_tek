@@ -11,6 +11,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Keep the bot alive: a stray RPC error (e.g. a 429 from a WS callback or a
+// failed swap/airdrop) must not crash the whole scheduler. Log and continue —
+// the affected config simply retries on its next cycle.
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️  Unhandled rejection (process kept alive):', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('⚠️  Uncaught exception (process kept alive):', err?.message || err);
+});
+
 // Middleware
 app.use(express.json());
 app.use(middleware.cors);
