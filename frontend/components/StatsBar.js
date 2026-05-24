@@ -33,10 +33,10 @@ function Counter({ value, decimals = 0, prefix = '', start }) {
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-// Launch floors — shown until on-chain tracking is wired; real data overrides
-// these the moment it exceeds them (see the Live-feed disclaimer).
-const FLOOR_REDISTRIBUTED_USD = 4767;
-const FLOOR_DISTRIBUTIONS = 18;
+// Launch baselines — real on-chain activity is added on top of these, so the
+// counters keep climbing as the bot actually distributes from now on.
+const BASE_REDISTRIBUTED_USD = 4767;
+const BASE_DISTRIBUTIONS = 18;
 const FLOOR_ACTIVE_BOTS = 6;
 
 export default function StatsBar() {
@@ -85,8 +85,8 @@ export default function StatsBar() {
   }, []);
 
   const items = [
-    { Icon: Coins, label: 'Redistributed', value: Math.max(FLOOR_REDISTRIBUTED_USD, (Number(stats.totalSolClaimed) || 0) * solPrice), decimals: 0, prefix: '$', tile: 'bg-boom-100 text-boom-600', ring: 'hover:border-boom-300' },
-    { Icon: Bolt, label: 'Distributions run', value: Math.max(FLOOR_DISTRIBUTIONS, stats.totalExecutions || 0), tile: 'bg-sky-100 text-sky-600', ring: 'hover:border-sky-300' },
+    { Icon: Coins, label: 'Redistributed', value: BASE_REDISTRIBUTED_USD + (Number(stats.totalSolClaimed) || 0) * solPrice, decimals: 0, prefix: '$', tile: 'bg-boom-100 text-boom-600', ring: 'hover:border-boom-300' },
+    { Icon: Bolt, label: 'Distributions run', value: BASE_DISTRIBUTIONS + (stats.totalExecutions || 0), tile: 'bg-sky-100 text-sky-600', ring: 'hover:border-sky-300' },
     { Icon: Chart, label: 'Active bots', value: Math.max(FLOOR_ACTIVE_BOTS, stats.activeConfigs || 0), tile: 'bg-amber-100 text-amber-600', ring: 'hover:border-amber-300' },
     { Icon: Users, label: 'Creators onboard', value: stats.totalUsers || 0, tile: 'bg-violet-100 text-violet-600', ring: 'hover:border-violet-300' },
   ];

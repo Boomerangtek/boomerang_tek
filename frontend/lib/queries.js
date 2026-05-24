@@ -8,10 +8,11 @@ export async function getGlobalStats() {
   const [[u], [c], [e], [s]] = await Promise.all([
     sql`SELECT COUNT(*)::int AS count FROM users`,
     sql`SELECT COUNT(*)::int AS count FROM bot_configs WHERE is_active = true`,
-    sql`SELECT COUNT(*)::int AS count FROM execution_logs WHERE status = 'success'`,
+    sql`SELECT COUNT(*)::int AS count FROM execution_logs
+        WHERE status = 'success' AND holder_count > 0`,
     sql`SELECT COALESCE(SUM(claimed_sol_amount), 0) AS sum
         FROM execution_logs
-        WHERE status = 'success' AND claimed_sol_amount IS NOT NULL`,
+        WHERE status = 'success' AND holder_count > 0 AND claimed_sol_amount IS NOT NULL`,
   ]);
   return {
     totalUsers: u.count,
