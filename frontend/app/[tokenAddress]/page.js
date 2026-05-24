@@ -210,7 +210,7 @@ export default function TokenDashboard() {
               </div>
             </div>
             {data.recentExecutions.length > 0 ? (
-              <PerformanceChart data={data.recentExecutions} timeRange={timeRange} />
+              <PerformanceChart data={data.recentExecutions} timeRange={timeRange} symbol={tokenLabel(data.targetToken)} />
             ) : (
               <div className="flex h-64 items-center justify-center text-sm text-mut">
                 No execution data yet

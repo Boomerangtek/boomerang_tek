@@ -2,12 +2,16 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function PerformanceChart({ data, timeRange = '1w' }) {
-  // Transform execution data for chart
+export default function PerformanceChart({ data, timeRange = '1w', symbol = 'tokens' }) {
+  // Transform execution data for chart. Include the time-of-day in the label so
+  // runs on the same day are distinct points (otherwise they collapse onto one
+  // x category and the curve/tooltip break).
   const chartData = data.map(exec => ({
-    time: new Date(exec.executionTime).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
+    time: new Date(exec.executionTime).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }),
     airdropped: Number(exec.totalAirdropped),
     timestamp: new Date(exec.executionTime).getTime(),
@@ -16,10 +20,11 @@ export default function PerformanceChart({ data, timeRange = '1w' }) {
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="rounded-lg border border-line bg-night-850 p-3 shadow-soft">
+        <div className="rounded-lg border border-line bg-night-900 p-3 shadow-soft">
           <p className="text-xs text-mut">{payload[0].payload.time}</p>
           <p className="text-sm font-semibold text-boom-700">
-            {new Intl.NumberFormat('en-US').format(payload[0].value)} tokens
+            {new Intl.NumberFormat('en-US').format(payload[0].value)}
+            {symbol ? ` $${symbol}` : ' tokens'}
           </p>
         </div>
       );
