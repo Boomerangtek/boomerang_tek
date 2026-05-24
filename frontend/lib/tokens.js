@@ -41,7 +41,7 @@ export function randomDemoEvent(id) {
     type: isPaid ? 'paid' : 'linked',
     sourceToken: source,
     targetToken: target,
-    holderCount: isPaid ? 40 + Math.floor(Math.random() * 900) : null,
+    holderCount: isPaid ? 6 + Math.floor(Math.random() * 40) : null,
     time: new Date().toISOString(),
   };
 }
@@ -57,7 +57,7 @@ export function demoEventFromPairs(id, pairs, paidBias = 0.72) {
     type: isPaid ? 'paid' : 'linked',
     sourceToken: source,
     targetToken: target,
-    holderCount: isPaid ? 40 + Math.floor(Math.random() * 900) : null,
+    holderCount: isPaid ? 6 + Math.floor(Math.random() * 40) : null,
     time: new Date().toISOString(),
   };
 }
