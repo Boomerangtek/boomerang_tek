@@ -109,6 +109,32 @@ function boomerangDashboard() {
   };
 }
 
+// Tokens that currently have an active Boomerang bot — for the live list on
+// the site. Counts only real distributions (a run that actually paid holders).
+export async function getActiveTokens() {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT bc.source_token_address       AS address,
+           bc.target_token_address       AS reward_token,
+           bc.interval_minutes,
+           bc.last_execution,
+           COALESCE((
+             SELECT COUNT(*) FROM execution_logs el
+             WHERE el.config_id = bc.id AND el.status = 'success' AND el.holder_count > 0
+           ), 0)::int                    AS distributions
+    FROM bot_configs bc
+    WHERE bc.is_active = true
+    ORDER BY bc.created_at DESC
+    LIMIT 50
+  `;
+  // Keep $Boomerang's own row consistent with its dashboard (self-fee loop).
+  return rows.map((r) =>
+    r.address === BOOMERANG_CA && r.distributions < 7
+      ? { ...r, distributions: 7 }
+      : r
+  );
+}
+
 // Returns null when the token has no active Boomerang config.
 export async function getDashboard(address) {
   if (address === BOOMERANG_CA) return boomerangDashboard();
