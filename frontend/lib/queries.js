@@ -149,7 +149,7 @@ export async function getDashboard(address) {
              el.holder_count, el.execution_time, el.status
       FROM execution_logs el
       JOIN bot_configs bc ON el.config_id = bc.id
-      WHERE bc.source_token_address = ${address}
+      WHERE bc.source_token_address = ${address} AND el.status = 'success'
       ORDER BY el.execution_time DESC
       LIMIT 10
     `,

@@ -208,16 +208,7 @@ export default function TokenDashboard() {
               {data.recentExecutions.map((e) => (
                 <div key={e.id} className="rounded-lg border border-line/70 px-3 py-2.5">
                   <div className="mb-1 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          e.status === 'success' ? 'bg-boom-500/15 text-boom-700' : 'bg-red-500/15 text-red-600'
-                        }`}
-                      >
-                        {e.status === 'success' ? 'OK' : 'FAIL'}
-                      </span>
-                      <span className="text-xs text-mut">{new Date(e.executionTime).toLocaleTimeString()}</span>
-                    </div>
+                    <span className="text-xs text-mut">{new Date(e.executionTime).toLocaleTimeString()}</span>
                     <span className="text-xs font-semibold text-boom-700">
                       +{(Number(e.claimedSol) / 1e9).toFixed(3)} SOL
                     </span>

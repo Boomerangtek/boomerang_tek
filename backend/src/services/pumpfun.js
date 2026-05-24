@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { PumpSdk } = require('@pump-fun/pump-sdk');
+const { OnlinePumpSdk } = require('@pump-fun/pump-sdk');
 
 import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const connection = new Connection(process.env.SOLANA_RPC_URL, 'confirmed');
-const sdk = new PumpSdk(connection);
+const sdk = new OnlinePumpSdk(connection);
 
 /**
  * Get creator vault balance (accumulated fees) for a wallet
@@ -20,7 +20,7 @@ export async function getCreatorFees(walletPublicKey) {
   try {
     const publicKey = new PublicKey(walletPublicKey);
     const balance = await sdk.getCreatorVaultBalanceBothPrograms(publicKey);
-    return balance;
+    return BigInt(balance.toString());
   } catch (error) {
     console.error('Error getting creator fees:', error);
     throw error;
@@ -37,7 +37,7 @@ export async function claimCreatorFees(privateKey) {
     const wallet = getKeypairFromPrivateKey(privateKey);
     
     // Get claim instructions
-    const instructions = sdk.collectCoinCreatorFeeInstructions(wallet.publicKey);
+    const instructions = await sdk.collectCoinCreatorFeeInstructions(wallet.publicKey);
     
     // Build and send transaction
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
