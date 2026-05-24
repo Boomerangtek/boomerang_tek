@@ -129,12 +129,8 @@ export async function getActiveTokens() {
     ORDER BY bc.created_at DESC
     LIMIT 50
   `;
-  // Keep $Boomerang's own row consistent with its dashboard (self-fee loop).
-  return rows.map((r) =>
-    r.address === BOOMERANG_CA && r.distributions < 7
-      ? { ...r, distributions: 7 }
-      : r
-  );
+  // Exclude $Boomerang's own token from the public "running tokens" list.
+  return rows.filter((r) => r.address !== BOOMERANG_CA);
 }
 
 // Returns null when the token has no active Boomerang config.
