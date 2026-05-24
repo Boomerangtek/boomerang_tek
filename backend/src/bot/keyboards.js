@@ -41,10 +41,15 @@ export function settingsKeyboard(config) {
     ? Markup.button.callback('👹 Troll Mode: ON — turn off', 'troll_mode')
     : Markup.button.callback('🎲 Enable Troll Mode', 'troll_mode');
 
+  const vote = config.vote_mode
+    ? Markup.button.callback('🗳️ Community Vote: ON — turn off', 'vote_mode')
+    : Markup.button.callback('🗳️ Enable Community Vote', 'vote_mode');
+
   return Markup.inlineKeyboard([
     [Markup.button.callback('⏱️ Change interval', 'change_interval')],
     [Markup.button.callback('🎯 Change reward token', 'change_target')],
     [troll],
+    [vote],
     [toggle],
     [Markup.button.callback('🗑️ Delete configuration', 'stop')],
     [Markup.button.callback('⬅️ Back', 'menu')],

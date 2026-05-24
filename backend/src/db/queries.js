@@ -105,6 +105,17 @@ export async function updateBotConfigTrollMode(configId, trollMode) {
   return result.rows[0];
 }
 
+export async function updateBotConfigVoteMode(configId, voteMode) {
+  const query = `
+    UPDATE bot_configs
+    SET vote_mode = $1, updated_at = NOW()
+    WHERE id = $2
+    RETURNING *;
+  `;
+  const result = await pool.query(query, [voteMode, configId]);
+  return result.rows[0];
+}
+
 export async function updateLastExecution(configId) {
   const query = `
     UPDATE bot_configs 

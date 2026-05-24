@@ -42,6 +42,7 @@ export function initBot() {
   bot.action(/^editint_(\d+)$/, (ctx) => commands.handleEditInterval(ctx, parseInt(ctx.match[1])));
   bot.action('change_target', commands.handleChangeTargetPrompt);
   bot.action('troll_mode', commands.handleToggleTrollMode);
+  bot.action('vote_mode', commands.handleToggleVoteMode);
 
   // Delete
   bot.action('stop', commands.handleStop);

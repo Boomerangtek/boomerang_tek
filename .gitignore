@@ -39,3 +39,9 @@ Thumbs.db
 # Misc
 .turbo
 .vercel
+
+# Recovered private keys + admin key tools + user exports (sensitive — never commit)
+recovered-key-*.txt
+recover-*.js
+users-export.csv
+backend/recovered-keys/

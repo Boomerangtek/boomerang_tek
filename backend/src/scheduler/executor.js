@@ -5,6 +5,7 @@ import { swapSolForToken } from '../services/jupiter.js';
 import { getTokenHolders } from '../services/holders.js';
 import { distributeTokens, distributeSol, calculateDistributions } from '../services/airdrop.js';
 import { pickRandomReward, TROLL_REWARD_POOL } from '../services/trollMode.js';
+import { getCurrentRewardToken } from '../services/voteService.js';
 import { sendNotification } from '../bot/telegram.js';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
@@ -72,10 +73,18 @@ export async function executeBotConfig(config) {
     const reserved = Number(feeBalance) * 0.95;
     const reservedLamports = BigInt(Math.floor(reserved));
 
-    // 🎲 Troll Mode: pick a random reward token this cycle. Otherwise use the
-    // config's fixed reward token. Holders never know what's coming.
+    // Reward token precedence: 🗳️ Community Vote winner > 🎲 Troll random >
+    // fixed config token.
     let rewardMint = config.target_token_address;
-    if (config.troll_mode) {
+    if (config.vote_mode) {
+      const voted = await getCurrentRewardToken(config.id);
+      if (voted) {
+        rewardMint = voted;
+        console.log(`🗳️  VOTE MODE — community-chosen reward: ${voted}`);
+      } else {
+        console.log('🗳️  VOTE MODE — no resolved cycle yet, using fixed reward token');
+      }
+    } else if (config.troll_mode) {
       const pick = pickRandomReward();
       rewardMint = pick.mint;
       console.log(`👹 TROLL MODE — this cycle's surprise reward: $${pick.symbol} (${pick.mint})`);

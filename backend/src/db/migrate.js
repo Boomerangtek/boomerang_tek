@@ -80,6 +80,56 @@ async function migrate() {
     await pool.query(`ALTER TABLE execution_logs ADD COLUMN IF NOT EXISTS reward_token_used VARCHAR(44);`);
     console.log('✅ Ensured troll_mode / reward_token_used columns');
 
+    // Community Vote mode — holders vote on the next reward token.
+    await pool.query(`ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS vote_mode BOOLEAN DEFAULT false;`);
+    await pool.query(`ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS vote_cycle_hours INTEGER DEFAULT 24;`);
+    await pool.query(`ALTER TABLE bot_configs ADD COLUMN IF NOT EXISTS vote_safety_mode VARCHAR(16) DEFAULT 'standard';`);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS vote_cycles (
+        id SERIAL PRIMARY KEY,
+        config_id INTEGER REFERENCES bot_configs(id) ON DELETE CASCADE,
+        status VARCHAR(16) DEFAULT 'open',          -- open | resolved
+        starts_at TIMESTAMP DEFAULT NOW(),
+        ends_at TIMESTAMP NOT NULL,
+        winning_token VARCHAR(44),
+        total_weight NUMERIC DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS vote_snapshots (
+        cycle_id INTEGER REFERENCES vote_cycles(id) ON DELETE CASCADE,
+        holder_address VARCHAR(44) NOT NULL,
+        weight NUMERIC NOT NULL,
+        PRIMARY KEY (cycle_id, holder_address)
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS vote_options (
+        id SERIAL PRIMARY KEY,
+        cycle_id INTEGER REFERENCES vote_cycles(id) ON DELETE CASCADE,
+        token_address VARCHAR(44) NOT NULL,
+        proposed_by VARCHAR(44),
+        passed_filters BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (cycle_id, token_address)
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS votes (
+        cycle_id INTEGER REFERENCES vote_cycles(id) ON DELETE CASCADE,
+        voter_address VARCHAR(44) NOT NULL,
+        option_id INTEGER REFERENCES vote_options(id) ON DELETE CASCADE,
+        weight NUMERIC NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        PRIMARY KEY (cycle_id, voter_address)
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_vote_cycles_config ON vote_cycles(config_id, status);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_votes_option ON votes(option_id);`);
+    console.log('✅ Ensured community-vote tables');
+
     console.log('🎉 Migration completed successfully!');
     process.exit(0);
   } catch (error) {

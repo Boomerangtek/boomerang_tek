@@ -522,6 +522,22 @@ export async function handleToggleTrollMode(ctx) {
   }
 }
 
+export async function handleToggleVoteMode(ctx) {
+  const { config } = await getUserConfig(ctx.from.id);
+  if (!config) return ctx.answerCbQuery('No config found.');
+  const updated = await db.updateBotConfigVoteMode(config.id, !config.vote_mode);
+  await reschedule(updated);
+  await ctx.answerCbQuery(updated.vote_mode ? '🗳️ Community Vote ON' : 'Community Vote off');
+  const text = updated.vote_mode
+    ? `🗳️ *Community Vote activated!*\n\nYour holders now vote on the next airdrop reward at boomerang.tips/vote. The winning token is paid out each cycle.\n\nDefault cycle: every *${updated.vote_cycle_hours || 24}h*. Holders' votes are weighted by their balance at each cycle's snapshot. 🪃`
+    : `✅ *Community Vote off.*\n\nBack to your fixed reward token: \`${short(updated.target_token_address)}\`.`;
+  try {
+    await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboards.settingsKeyboard(updated) });
+  } catch {
+    await ctx.replyWithMarkdown(text, keyboards.settingsKeyboard(updated));
+  }
+}
+
 export async function handleStop(ctx) {
   const { config } = await getUserConfig(ctx.from.id);
   if (!config) {

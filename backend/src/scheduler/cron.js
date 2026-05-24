@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import * as db from '../db/queries.js';
 import { executeBotConfig } from './executor.js';
+import { tickVoteCycles } from '../services/voteService.js';
 
 // Store active cron jobs
 const activeCronJobs = new Map();
@@ -24,6 +25,17 @@ export async function initScheduler() {
       console.log('🔄 Checking for configuration updates...');
       await refreshScheduler();
     });
+
+    // Vote-cycle housekeeping: open/resolve community-vote cycles every 5 min.
+    cron.schedule('*/5 * * * *', async () => {
+      try {
+        await tickVoteCycles();
+      } catch (e) {
+        console.error('Vote cycle tick failed:', e.message);
+      }
+    });
+    // Run once on boot so vote-mode configs get an open cycle immediately.
+    tickVoteCycles().catch((e) => console.error('Initial vote tick failed:', e.message));
 
     console.log('✅ Scheduler initialized successfully');
   } catch (error) {
