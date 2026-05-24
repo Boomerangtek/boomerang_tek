@@ -1,16 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Gift, Flame, Clock, Swap, Users, Arrow, X } from './Icons';
-
-const X_URL = 'https://x.com/Boomerang_tek';
-
-const STEPS = [
-  { Icon: X, title: 'Vote on X', body: 'Reply to our post on X with a token’s CA — that reply is your vote.' },
-  { Icon: Clock, title: 'Snapshot every 15 min', body: 'We snapshot the votes and the most-backed token wins the cycle.' },
-  { Icon: Swap, title: 'Swap the fees', body: '70% of the fees buy the winning token at Jupiter best price.' },
-  { Icon: Users, title: 'Airdrop pro-rata', body: 'Sent to every $Boomerang holder by their share — then it loops.' },
-];
+import { Gift, Flame } from './Icons';
 
 export default function OwnCustomer() {
   const ref = useRef(null);
@@ -40,9 +31,9 @@ export default function OwnCustomer() {
           Boomerang runs on Boomerang
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-mut">
-          Every 15 minutes we point our own bot at ourselves — and the community decides
-          the payout by voting on X. This isn&apos;t a feature pitch; it&apos;s what the
-          bot does right now, on us.
+          Every 15 minutes we point our own bot at ourselves: 70% airdropped to holders,
+          30% buyback &amp; burn. This isn&apos;t a feature pitch; it&apos;s what the bot
+          does right now, on us.
         </p>
       </div>
 
@@ -89,47 +80,6 @@ export default function OwnCustomer() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* How the rotating token is picked — the live loop */}
-      <div className="mt-8">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-semibold text-fg">How the token rotates</h3>
-          <span className="chip text-boom-700">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-boom-500" />
-            Live · On loop · Forever
-          </span>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(({ Icon, title, body }, i) => (
-            <div key={title} className="panel card-fun relative p-5 hover:border-boom-300">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-boom-100 text-boom-600">
-                  <Icon className="h-[18px] w-[18px]" />
-                </span>
-                <span className="font-display text-lg font-bold text-night-800">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-              </div>
-              <h4 className="text-sm font-semibold text-fg">{title}</h4>
-              <p className="mt-1 text-sm leading-relaxed text-mut">{body}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Payoff + CTA */}
-      <div className="panel-glow mt-8 flex flex-col items-center justify-between gap-5 px-7 py-7 text-center sm:flex-row sm:text-left">
-        <p className="text-[15px] leading-relaxed text-mut">
-          <span className="font-semibold text-fg">Hold $Boomerang</span> → get paid in
-          whatever the community is hyped on, every 15 minutes.
-        </p>
-        <a href={X_URL} target="_blank" rel="noopener noreferrer" className="btn-primary shrink-0">
-          <X className="h-4 w-4" />
-          Vote on X
-          <Arrow className="h-4 w-4" />
-        </a>
       </div>
     </div>
   );
