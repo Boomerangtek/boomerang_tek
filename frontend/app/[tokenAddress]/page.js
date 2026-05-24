@@ -7,6 +7,7 @@ import PerformanceChart from '../../components/PerformanceChart';
 import Navigation from '../../components/Navigation';
 import Footer from '../../components/Footer';
 import { Coins, Bolt, Swap, Gift, Arrow } from '../../components/Icons';
+import Countdown from '../../components/Countdown';
 
 function shortenAddress(a) {
   return a ? `${a.slice(0, 4)}…${a.slice(-4)}` : '';
@@ -238,6 +239,14 @@ export default function TokenDashboard() {
                 <p className="text-xs text-mut">Interval</p>
                 <p className="text-sm font-medium text-fg">Every {data.config.intervalMinutes} minutes</p>
               </div>
+              {data.config.isActive && (
+                <div>
+                  <p className="text-xs text-mut">Next distribution</p>
+                  <p className="font-display text-xl font-semibold tabular-nums text-boom-700">
+                    <Countdown intervalMinutes={data.config.intervalMinutes} />
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

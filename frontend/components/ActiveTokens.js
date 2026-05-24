@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { resolveToken } from '../lib/tokens';
+import Countdown from './Countdown';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -100,10 +101,15 @@ export default function ActiveTokens() {
                     {t.distributions > 0 ? ` · ${t.distributions} payouts` : ''}
                   </div>
                 </div>
-                <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold text-boom-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-boom-500" />
-                  Active
-                </span>
+                <div className="shrink-0 text-right">
+                  <div className="flex items-center justify-end gap-1.5 text-[11px] font-semibold text-boom-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-boom-500" />
+                    Active
+                  </div>
+                  <div className="mt-0.5 font-mono text-[11px] text-mut">
+                    next <Countdown intervalMinutes={t.intervalMinutes} />
+                  </div>
+                </div>
               </Link>
             );
           })}
