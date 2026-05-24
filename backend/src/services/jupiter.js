@@ -25,11 +25,15 @@ const SOL_MINT = 'So11111111111111111111111111111111111111112';
  */
 async function getTokenBalance(owner, mint) {
   try {
+    const mintPubkey = new PublicKey(mint);
+    // Use whichever token program owns the mint (classic SPL or Token-2022).
+    const mintInfo = await connection.getAccountInfo(mintPubkey);
+    const programId = mintInfo?.owner ?? TOKEN_PROGRAM_ID;
     const ata = await getAssociatedTokenAddress(
-      new PublicKey(mint),
+      mintPubkey,
       owner,
       false,
-      TOKEN_PROGRAM_ID,
+      programId,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
     const balance = await connection.getTokenAccountBalance(ata);

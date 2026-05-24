@@ -2,9 +2,11 @@ import * as db from '../db/queries.js';
 import { decryptPrivateKey } from '../services/encryption.js';
 import { getCreatorFees, claimCreatorFees } from '../services/pumpfun.js';
 import { swapSolForToken } from '../services/jupiter.js';
-import { getTokenHolders } from '../services/birdeye.js';
-import { distributeTokens, calculateDistributions } from '../services/airdrop.js';
+import { getTokenHolders } from '../services/holders.js';
+import { distributeTokens, distributeSol, calculateDistributions } from '../services/airdrop.js';
 import { sendNotification } from '../bot/telegram.js';
+
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
 // Tracks configs whose pipeline is currently running, so a cron tick that
 // fires while the previous run is still in flight is skipped rather than
@@ -64,23 +66,31 @@ export async function executeBotConfig(config) {
     // confirmed, so a failed claim isn't logged as a successful one.
     executionLog.claimedSolAmount = feeBalance.toString();
 
-    // Step 4: Calculate swap amount (keep 5% for transaction fees)
-    const swapAmount = Number(feeBalance) * 0.95;
-    const swapAmountLamports = Math.floor(swapAmount);
+    // Keep 5% of the claimed SOL as a buffer for transaction fees.
+    const reserved = Number(feeBalance) * 0.95;
+    const reservedLamports = BigInt(Math.floor(reserved));
+    const rewardIsSol = config.target_token_address === SOL_MINT;
 
-    console.log(`💱 Swapping ${swapAmountLamports} lamports for ${config.target_token_address}...`);
-
-    // Step 5: Swap SOL for target token
-    const swapResult = await swapSolForToken(
-      privateKey,
-      config.target_token_address,
-      swapAmountLamports,
-      config.slippage_bps
-    );
-
-    executionLog.boughtTokenAmount = swapResult.outputAmount.toString();
-    console.log(`   Bought ${swapResult.outputAmount.toString()} tokens`);
-    console.log(`   Swap TX: ${swapResult.signature}`);
+    // Step 4–5: Get the amount to distribute. If the reward is SOL itself,
+    // there is nothing to swap — distribute the claimed SOL directly.
+    // Otherwise swap the SOL into the reward token first.
+    let amountToDistribute;
+    if (rewardIsSol) {
+      console.log(`💸 Reward is SOL — skipping swap, distributing ${reservedLamports} lamports directly`);
+      amountToDistribute = reservedLamports;
+    } else {
+      console.log(`💱 Swapping ${reservedLamports} lamports for ${config.target_token_address}...`);
+      const swapResult = await swapSolForToken(
+        privateKey,
+        config.target_token_address,
+        Number(reservedLamports),
+        config.slippage_bps
+      );
+      executionLog.boughtTokenAmount = swapResult.outputAmount.toString();
+      amountToDistribute = swapResult.outputAmount;
+      console.log(`   Bought ${swapResult.outputAmount.toString()} tokens`);
+      console.log(`   Swap TX: ${swapResult.signature}`);
+    }
 
     // Step 6: Get token holders
     console.log(`👥 Fetching holders of ${config.source_token_address}...`);
@@ -105,17 +115,15 @@ export async function executeBotConfig(config) {
     console.log('📊 Calculating proportional distributions...');
     const distributions = calculateDistributions(
       holders,
-      swapResult.outputAmount,
-      1n // Min 1 token per holder
+      amountToDistribute,
+      1n // Min 1 base unit per holder
     );
 
-    // Step 8: Execute airdrops
+    // Step 8: Execute airdrops (native SOL or SPL/Token-2022 transfer)
     console.log('🎁 Starting airdrop distribution...');
-    const airdropResults = await distributeTokens(
-      privateKey,
-      config.target_token_address,
-      distributions
-    );
+    const airdropResults = rewardIsSol
+      ? await distributeSol(privateKey, distributions)
+      : await distributeTokens(privateKey, config.target_token_address, distributions);
 
     executionLog.totalAirdropped = airdropResults.totalSent.toString();
     executionLog.status = 'success';
@@ -158,12 +166,12 @@ export async function executeBotConfig(config) {
     await db.updateLastExecution(config.id);
 
     // Step 12: Notify user
+    const rewardLabel = rewardIsSol ? 'SOL (lamports)' : 'tokens';
     const successMessage = `
 ✅ *Execution Complete!*
 
 💰 Claimed: ${(Number(feeBalance) / 1e9).toFixed(4)} SOL
-💱 Bought: ${swapResult.outputAmount.toString()} tokens
-🎁 Airdropped: ${airdropResults.totalSent.toString()} tokens
+🎁 Airdropped: ${airdropResults.totalSent.toString()} ${rewardLabel}
 👥 Recipients: ${airdropResults.successful.length}/${holders.length} holders
 ⏰ Next run: ${config.interval_minutes} minutes
 

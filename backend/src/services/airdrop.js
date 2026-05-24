@@ -3,12 +3,14 @@ import {
   Keypair,
   PublicKey,
   Transaction,
+  SystemProgram,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
-  createTransferInstruction,
+  createTransferCheckedInstruction,
+  getMint,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
@@ -19,203 +21,185 @@ dotenv.config();
 
 const connection = new Connection(process.env.SOLANA_RPC_URL, 'confirmed');
 
-// Batch configuration
-const BATCH_SIZE = 5; // Number of recipients per transaction (conservative to avoid size limits)
-const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
+// SPL transfers (+ possible ATA creation) are heavy, so keep batches small;
+// native SOL transfers are tiny, so a batch can hold many more.
+const SPL_BATCH_SIZE = 5;
+const SOL_BATCH_SIZE = 12;
+const DELAY_BETWEEN_BATCHES = 1000;
 
-/**
- * Distribute tokens to multiple holders proportionally
- * @param {string} privateKey - Sender's private key
- * @param {string} tokenMint - Token mint address
- * @param {Array} distributions - Array of {address, amount} objects
- * @returns {Promise<Object>} - Results with successful and failed transfers
- */
-export async function distributeTokens(privateKey, tokenMint, distributions) {
-  try {
-    const wallet = getKeypairFromPrivateKey(privateKey);
-    const mintPubkey = new PublicKey(tokenMint);
-
-    console.log(`🎁 Starting airdrop to ${distributions.length} holders...`);
-
-    // Get sender's associated token account
-    const senderATA = await getAssociatedTokenAddress(
-      mintPubkey,
-      wallet.publicKey,
-      false,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    // Process in batches
-    const results = {
-      successful: [],
-      failed: [],
-      totalSent: 0n,
-    };
-
-    for (let i = 0; i < distributions.length; i += BATCH_SIZE) {
-      const batch = distributions.slice(i, i + BATCH_SIZE);
-      const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
-      const totalBatches = Math.ceil(distributions.length / BATCH_SIZE);
-
-      console.log(`📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} recipients)...`);
-
-      try {
-        const batchResult = await processBatch(
-          wallet,
-          mintPubkey,
-          senderATA,
-          batch,
-          batchNumber
-        );
-
-        results.successful.push(...batchResult.successful);
-        results.failed.push(...batchResult.failed);
-        results.totalSent += batchResult.totalSent;
-
-        // Delay between batches to avoid rate limiting
-        if (i + BATCH_SIZE < distributions.length) {
-          await sleep(DELAY_BETWEEN_BATCHES);
-        }
-      } catch (error) {
-        console.error(`❌ Batch ${batchNumber} failed:`, error.message);
-        // Mark all in batch as failed
-        batch.forEach(dist => {
-          results.failed.push({
-            ...dist,
-            error: error.message,
-          });
-        });
-      }
-    }
-
-    console.log(`✅ Airdrop complete!`);
-    console.log(`   Successful: ${results.successful.length}`);
-    console.log(`   Failed: ${results.failed.length}`);
-    console.log(`   Total sent: ${results.totalSent.toString()} tokens`);
-
-    return results;
-  } catch (error) {
-    console.error('❌ Airdrop failed:', error);
-    throw error;
-  }
+/** Whichever token program owns a mint (classic SPL or Token-2022). */
+async function getMintProgramId(mintPubkey) {
+  const info = await connection.getAccountInfo(mintPubkey);
+  return info?.owner ?? TOKEN_PROGRAM_ID;
 }
 
 /**
- * Process a single batch of airdrop transfers
- * @param {Keypair} wallet - Sender wallet
- * @param {PublicKey} mintPubkey - Token mint
- * @param {PublicKey} senderATA - Sender's associated token account
- * @param {Array} batch - Batch of distributions
- * @param {number} batchNumber - Batch number for logging
- * @returns {Promise<Object>} - Batch results
+ * Distribute an SPL / Token-2022 token to many holders proportionally.
+ * Works for either token program — it detects the one owning the mint.
+ * @param {string} privateKey - Sender's private key
+ * @param {string} tokenMint - Reward token mint address
+ * @param {Array<{address: string, amount: bigint}>} distributions
+ * @returns {Promise<{successful: Array, failed: Array, totalSent: bigint}>}
  */
-async function processBatch(wallet, mintPubkey, senderATA, batch, batchNumber) {
-  const transaction = new Transaction();
-  const results = {
-    successful: [],
-    failed: [],
-    totalSent: 0n,
-  };
+export async function distributeTokens(privateKey, tokenMint, distributions) {
+  const wallet = getKeypairFromPrivateKey(privateKey);
+  const mintPubkey = new PublicKey(tokenMint);
+  const programId = await getMintProgramId(mintPubkey);
+  const mint = await getMint(connection, mintPubkey, 'confirmed', programId);
 
-  // Prepare all recipient ATAs and instructions
-  for (const dist of batch) {
-    try {
-      if (dist.amount <= 0n) {
-        results.failed.push({
-          ...dist,
-          error: 'Amount must be greater than 0',
-        });
-        continue;
-      }
+  console.log(`🎁 Airdropping ${tokenMint} (program ${programId.toBase58()}) to ${distributions.length} holders...`);
 
-      const recipientPubkey = new PublicKey(dist.address);
-      const recipientATA = await getAssociatedTokenAddress(
-        mintPubkey,
-        recipientPubkey,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      );
+  const senderATA = await getAssociatedTokenAddress(
+    mintPubkey,
+    wallet.publicKey,
+    false,
+    programId,
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
 
-      // Check if recipient ATA exists
-      const accountInfo = await connection.getAccountInfo(recipientATA);
+  const results = { successful: [], failed: [], totalSent: 0n };
 
-      if (!accountInfo) {
-        // Create ATA instruction
+  for (let i = 0; i < distributions.length; i += SPL_BATCH_SIZE) {
+    const batch = distributions.slice(i, i + SPL_BATCH_SIZE);
+    const batchNumber = Math.floor(i / SPL_BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(distributions.length / SPL_BATCH_SIZE);
+    console.log(`📦 Token batch ${batchNumber}/${totalBatches} (${batch.length})...`);
+
+    const transaction = new Transaction();
+    const included = [];
+
+    for (const dist of batch) {
+      try {
+        if (BigInt(dist.amount) <= 0n) {
+          results.failed.push({ ...dist, error: 'Amount must be greater than 0' });
+          continue;
+        }
+        const recipient = new PublicKey(dist.address);
+        const recipientATA = await getAssociatedTokenAddress(
+          mintPubkey,
+          recipient,
+          false,
+          programId,
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+
+        const accountInfo = await connection.getAccountInfo(recipientATA);
+        if (!accountInfo) {
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              wallet.publicKey,
+              recipientATA,
+              recipient,
+              mintPubkey,
+              programId,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          );
+        }
+
         transaction.add(
-          createAssociatedTokenAccountInstruction(
-            wallet.publicKey,
-            recipientATA,
-            recipientPubkey,
+          createTransferCheckedInstruction(
+            senderATA,
             mintPubkey,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
+            recipientATA,
+            wallet.publicKey,
+            BigInt(dist.amount),
+            mint.decimals,
+            [],
+            programId
           )
         );
+        included.push(dist);
+      } catch (error) {
+        results.failed.push({ ...dist, error: error.message });
       }
-
-      // Add transfer instruction
-      transaction.add(
-        createTransferInstruction(
-          senderATA,
-          recipientATA,
-          wallet.publicKey,
-          BigInt(dist.amount),
-          [],
-          TOKEN_PROGRAM_ID
-        )
-      );
-
-      results.totalSent += BigInt(dist.amount);
-    } catch (error) {
-      console.error(`Error preparing transfer for ${dist.address}:`, error.message);
-      results.failed.push({
-        ...dist,
-        error: error.message,
-      });
     }
+
+    await sendBatch(transaction, wallet, included, results, batchNumber);
+
+    if (i + SPL_BATCH_SIZE < distributions.length) await sleep(DELAY_BETWEEN_BATCHES);
   }
 
-  // Send transaction if there are instructions
-  if (transaction.instructions.length > 0) {
-    try {
-      const signature = await sendAndConfirmTransaction(
-        connection,
-        transaction,
-        [wallet],
-        {
-          commitment: 'confirmed',
-          skipPreflight: false,
-        }
-      );
-
-      console.log(`   ✅ Batch ${batchNumber} confirmed: ${signature}`);
-
-      // Mark all as successful (that weren't already marked as failed)
-      batch.forEach(dist => {
-        if (!results.failed.find(f => f.address === dist.address)) {
-          results.successful.push({
-            ...dist,
-            signature,
-          });
-        }
-      });
-    } catch (error) {
-      console.error(`Transaction failed for batch ${batchNumber}:`, error.message);
-      // Mark all as failed
-      batch.forEach(dist => {
-        if (!results.failed.find(f => f.address === dist.address)) {
-          results.failed.push({
-            ...dist,
-            error: `Transaction failed: ${error.message}`,
-          });
-        }
-      });
-    }
-  }
-
+  logAirdropSummary(results);
   return results;
+}
+
+/**
+ * Distribute native SOL to many holders proportionally (used when the reward
+ * token is SOL itself — no swap, no token accounts, just system transfers).
+ * @param {string} privateKey - Sender's private key
+ * @param {Array<{address: string, amount: bigint}>} distributions
+ * @returns {Promise<{successful: Array, failed: Array, totalSent: bigint}>}
+ */
+export async function distributeSol(privateKey, distributions) {
+  const wallet = getKeypairFromPrivateKey(privateKey);
+  console.log(`🎁 Airdropping native SOL to ${distributions.length} holders...`);
+
+  const results = { successful: [], failed: [], totalSent: 0n };
+
+  for (let i = 0; i < distributions.length; i += SOL_BATCH_SIZE) {
+    const batch = distributions.slice(i, i + SOL_BATCH_SIZE);
+    const batchNumber = Math.floor(i / SOL_BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(distributions.length / SOL_BATCH_SIZE);
+    console.log(`📦 SOL batch ${batchNumber}/${totalBatches} (${batch.length})...`);
+
+    const transaction = new Transaction();
+    const included = [];
+
+    for (const dist of batch) {
+      try {
+        if (BigInt(dist.amount) <= 0n) {
+          results.failed.push({ ...dist, error: 'Amount must be greater than 0' });
+          continue;
+        }
+        transaction.add(
+          SystemProgram.transfer({
+            fromPubkey: wallet.publicKey,
+            toPubkey: new PublicKey(dist.address),
+            lamports: BigInt(dist.amount),
+          })
+        );
+        included.push(dist);
+      } catch (error) {
+        results.failed.push({ ...dist, error: error.message });
+      }
+    }
+
+    await sendBatch(transaction, wallet, included, results, batchNumber);
+
+    if (i + SOL_BATCH_SIZE < distributions.length) await sleep(DELAY_BETWEEN_BATCHES);
+  }
+
+  logAirdropSummary(results);
+  return results;
+}
+
+/** Send one prepared batch and record per-recipient success/failure. */
+async function sendBatch(transaction, wallet, included, results, batchNumber) {
+  if (transaction.instructions.length === 0) return;
+  try {
+    const signature = await sendAndConfirmTransaction(connection, transaction, [wallet], {
+      commitment: 'confirmed',
+      skipPreflight: false,
+    });
+    console.log(`   ✅ Batch ${batchNumber} confirmed: ${signature}`);
+    for (const dist of included) {
+      results.successful.push({ ...dist, signature });
+      results.totalSent += BigInt(dist.amount);
+    }
+  } catch (error) {
+    console.error(`   ❌ Batch ${batchNumber} failed:`, error.message);
+    for (const dist of included) {
+      results.failed.push({ ...dist, error: `Transaction failed: ${error.message}` });
+    }
+  }
+}
+
+function logAirdropSummary(results) {
+  console.log('✅ Airdrop complete!');
+  console.log(`   Successful: ${results.successful.length}`);
+  console.log(`   Failed: ${results.failed.length}`);
+  console.log(`   Total sent: ${results.totalSent.toString()}`);
 }
 
 /**
