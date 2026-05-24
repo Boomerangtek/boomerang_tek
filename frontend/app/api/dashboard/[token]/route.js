@@ -55,6 +55,7 @@ export async function GET(request, { params }) {
         intervalMinutes: config.interval_minutes,
         isActive: config.is_active,
         trollMode: Boolean(config.troll_mode),
+        voteMode: Boolean(config.vote_mode),
       },
       timestamp: new Date().toISOString(),
     });

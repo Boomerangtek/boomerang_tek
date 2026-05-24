@@ -165,7 +165,17 @@ export default function TokenDashboard() {
               <span className={`h-1.5 w-1.5 rounded-full ${data.config.isActive ? 'bg-boom-400' : 'bg-mut'}`} />
               {data.config.isActive ? 'Active' : 'Paused'} · every {data.config.intervalMinutes} min
             </span>
-            {data.config.trollMode ? (
+            {data.config.voteMode ? (
+              <>
+                <span className="chip border-sky-300 bg-sky-50 text-sky-700">
+                  🗳️ Community Vote · holders pick the reward
+                </span>
+                <Link href="/vote" className="btn-primary px-3 py-1.5 text-xs">
+                  Vote now
+                  <Arrow className="h-3.5 w-3.5" />
+                </Link>
+              </>
+            ) : data.config.trollMode ? (
               <span className="chip border-purple-300 bg-purple-50 text-purple-700">
                 🎲 Troll Mode · random reward 👹
               </span>
