@@ -94,14 +94,18 @@ export default function ActiveTokens() {
                       {t.name || `$${symbol}`}
                     </span>
                     <span className="shrink-0 font-mono text-[11px] text-mut">${symbol}</span>
-                    {t.trollMode && (
+                    {t.voteMode ? (
+                      <span className="shrink-0 rounded-full bg-sky-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-sky-700">
+                        🗳️ Voting Mode
+                      </span>
+                    ) : t.trollMode ? (
                       <span className="shrink-0 rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-700">
                         🎲 Troll Mode
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="truncate text-xs text-mut">
-                    {t.trollMode ? '🎲 Troll Mode' : `→ $${rewardSymbol}`} · every {t.intervalMinutes}m
+                    {t.voteMode ? '🗳️ Community Vote' : t.trollMode ? '🎲 Troll Mode' : `→ $${rewardSymbol}`} · every {t.intervalMinutes}m
                     {t.marketCap ? ` · MC $${compact(t.marketCap)}` : ''}
                     {t.distributions > 0 ? ` · ${t.distributions} payouts` : ''}
                   </div>

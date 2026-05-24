@@ -27,6 +27,7 @@ export async function GET() {
         rewardToken: r.reward_token,
         rewardSymbol: meta[r.reward_token]?.symbol || null,
         trollMode: Boolean(r.troll_mode),
+        voteMode: Boolean(r.vote_mode),
         intervalMinutes: r.interval_minutes,
         distributions: r.distributions,
         lastExecution: r.last_execution,

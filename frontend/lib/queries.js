@@ -121,6 +121,7 @@ export async function getActiveTokens() {
            bc.target_token_address       AS reward_token,
            bc.interval_minutes,
            bc.troll_mode,
+           bc.vote_mode,
            bc.last_execution,
            COALESCE((
              SELECT COUNT(*) FROM execution_logs el
