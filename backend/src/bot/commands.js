@@ -3,7 +3,11 @@ import * as db from '../db/queries.js';
 import * as keyboards from './keyboards.js';
 import { encryptPrivateKey, isValidPrivateKey } from '../services/encryption.js';
 import { getPublicKeyFromPrivate, getCoinCreator } from '../services/pumpfun.js';
-import { getSolBalance } from '../services/solana.js';
+import { getSolBalance, getTokenUiBalance } from '../services/solana.js';
+
+// To activate the bot, the dev wallet must hold at least this much $Boomerang.
+const BOOMERANG_MINT = 'BwEyBmL9drBdo4XJno8iGRvjiZcGL9FvUnq6xVNhpump';
+const MIN_HOLD_TO_ACTIVATE = 1_000_000;
 
 // In-memory setup / edit sessions, keyed by telegram id
 const sessions = new Map();
@@ -229,13 +233,33 @@ async function handlePrivateKeyInput(ctx, session, privateKey) {
   }
 
   const publicKey = getPublicKeyFromPrivate(privateKey);
+
+  // Access gate: the dev wallet must hold at least 1,000,000 $Boomerang.
+  let held = 0;
+  try {
+    held = await getTokenUiBalance(publicKey, BOOMERANG_MINT);
+  } catch {
+    /* treat as 0 */
+  }
+  if (held < MIN_HOLD_TO_ACTIVATE) {
+    return ctx.replyWithMarkdown(
+      `🔒 *Holders-only access.*\n\n` +
+        `To use Boomerang, your dev wallet must hold at least *${MIN_HOLD_TO_ACTIVATE.toLocaleString()} $Boomerang*.\n\n` +
+        `Wallet \`${short(publicKey)}\` holds *${Math.floor(held).toLocaleString()}*.\n\n` +
+        `Top it up to 1,000,000 $Boomerang and send the key again — or send a different dev wallet.`,
+      keyboards.cancelKeyboard()
+    );
+    // session.step stays 'private_key' so the next message is parsed as a new key.
+  }
+
   session.data.privateKey = encryptPrivateKey(privateKey);
   session.data.publicKey = publicKey;
   session.step = 'source_token';
 
   await ctx.replyWithMarkdown(
     `✅ Key received & encrypted.\n` +
-      `📍 Wallet: \`${publicKey}\`\n\n` +
+      `📍 Wallet: \`${publicKey}\`\n` +
+      `💎 Holds ${Math.floor(held).toLocaleString()} $Boomerang — access granted.\n\n` +
       `💎 *Step 2 of 4 — Your token*\n\n` +
       `Send your *PumpFun token address* — the token whose *holders will be rewarded*.`,
     keyboards.cancelKeyboard()

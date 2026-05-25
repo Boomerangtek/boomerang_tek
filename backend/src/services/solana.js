@@ -52,6 +52,30 @@ export async function getTokenBalance(walletAddress, tokenMint) {
 }
 
 /**
+ * UI-amount token balance for a wallet (sums all its accounts for the mint;
+ * works for classic SPL and Token-2022). Returns 0 on error.
+ * @param {string} walletAddress
+ * @param {string} tokenMint
+ * @returns {Promise<number>}
+ */
+export async function getTokenUiBalance(walletAddress, tokenMint) {
+  try {
+    const accounts = await connection.getParsedTokenAccountsByOwner(
+      new PublicKey(walletAddress),
+      { mint: new PublicKey(tokenMint) }
+    );
+    let total = 0;
+    for (const { account } of accounts.value) {
+      total += account.data?.parsed?.info?.tokenAmount?.uiAmount || 0;
+    }
+    return total;
+  } catch (error) {
+    console.error('Error getting token UI balance:', error);
+    return 0;
+  }
+}
+
+/**
  * Verify a transaction signature
  * @param {string} signature - Transaction signature
  * @returns {Promise<boolean>} - True if confirmed
