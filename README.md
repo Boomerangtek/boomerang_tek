@@ -120,8 +120,6 @@ Generate an encryption key:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-See **[QUICKSTART.md](QUICKSTART.md)** · **[DEPLOYMENT.md](DEPLOYMENT.md)** · **[SECURITY.md](SECURITY.md)**.
-
 ---
 
 ## 🔌 Public API
@@ -140,8 +138,6 @@ See **[QUICKSTART.md](QUICKSTART.md)** · **[DEPLOYMENT.md](DEPLOYMENT.md)** · 
 - **AES-256-GCM** encryption for every dev-wallet private key; decrypted only in memory, only at execution.
 - Parameterized SQL everywhere; secrets live in `.env` (never committed).
 - A dev wallet should be **dedicated and disposable** — never your main wallet.
-
-See **[SECURITY.md](SECURITY.md)** for the full model.
 
 ---
 
