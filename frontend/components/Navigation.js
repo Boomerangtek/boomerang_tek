@@ -37,6 +37,9 @@ export default function Navigation() {
             <Link href="/vote" className="rounded-md px-3 py-1.5 text-sm font-medium text-boom-700 transition hover:text-boom-600">
               Vote 🗳️
             </Link>
+            <Link href="/missions" className="rounded-md px-3 py-1.5 text-sm font-medium text-boom-700 transition hover:text-boom-600">
+              Missions 🎯
+            </Link>
             <a href="#developers" className="rounded-md px-3 py-1.5 text-sm font-medium text-mut transition hover:text-fg">
               API
             </a>

@@ -130,6 +130,56 @@ async function migrate() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_votes_option ON votes(option_id);`);
     console.log('✅ Ensured community-vote tables');
 
+    // Missions — holders complete actions, earn rewards, claim from treasury.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS missions (
+        id SERIAL PRIMARY KEY,
+        slug VARCHAR(64) UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        type VARCHAR(32) NOT NULL,            -- hold | vote | customer
+        params JSONB DEFAULT '{}'::jsonb,
+        reward_token VARCHAR(44) NOT NULL,
+        reward_amount NUMERIC NOT NULL,        -- base units of reward_token
+        total_budget NUMERIC NOT NULL DEFAULT 0,
+        spent NUMERIC NOT NULL DEFAULT 0,
+        per_wallet_limit INTEGER DEFAULT 1,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS mission_completions (
+        id SERIAL PRIMARY KEY,
+        mission_id INTEGER REFERENCES missions(id) ON DELETE CASCADE,
+        wallet VARCHAR(44) NOT NULL,
+        status VARCHAR(16) DEFAULT 'verified', -- verified | claiming | paid
+        reward_token VARCHAR(44) NOT NULL,
+        reward_amount NUMERIC NOT NULL,
+        payout_sig VARCHAR(88),
+        created_at TIMESTAMP DEFAULT NOW(),
+        paid_at TIMESTAMP,
+        UNIQUE (mission_id, wallet)
+      );
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_mission_completions_wallet ON mission_completions(wallet, status);`);
+
+    // Seed starter on-chain missions (rewards in SOL, lamports). Idempotent.
+    const SOL = 'So11111111111111111111111111111111111111112';
+    const seed = [
+      ['diamond-500k', 'Diamond hands', 'Hold at least 500,000 $Boomerang.', 'hold', { minAmount: 500000 }, 10_000_000, 1_000_000_000],
+      ['first-vote', 'Cast your first vote', 'Vote in any Community Vote cycle.', 'vote', {}, 5_000_000, 1_000_000_000],
+      ['link-token', 'Become a customer', 'Link one of your tokens to the Boomerang bot.', 'customer', {}, 20_000_000, 2_000_000_000],
+    ];
+    for (const [slug, title, description, type, params, reward, budget] of seed) {
+      await pool.query(
+        `INSERT INTO missions (slug, title, description, type, params, reward_token, reward_amount, total_budget)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (slug) DO NOTHING`,
+        [slug, title, description, type, JSON.stringify(params), SOL, reward, budget]
+      );
+    }
+    console.log('✅ Ensured missions tables + seeded starter missions');
+
     console.log('🎉 Migration completed successfully!');
     process.exit(0);
   } catch (error) {

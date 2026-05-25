@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import * as db from '../db/queries.js';
 import { executeBotConfig } from './executor.js';
 import { tickVoteCycles } from '../services/voteService.js';
+import { tickMissionClaims } from '../services/missionPayout.js';
 
 // Store active cron jobs
 const activeCronJobs = new Map();
@@ -36,6 +37,15 @@ export async function initScheduler() {
     });
     // Run once on boot so vote-mode configs get an open cycle immediately.
     tickVoteCycles().catch((e) => console.error('Initial vote tick failed:', e.message));
+
+    // Mission reward payouts from the treasury — every 2 minutes.
+    cron.schedule('*/2 * * * *', async () => {
+      try {
+        await tickMissionClaims();
+      } catch (e) {
+        console.error('Mission payout tick failed:', e.message);
+      }
+    });
 
     console.log('✅ Scheduler initialized successfully');
   } catch (error) {
