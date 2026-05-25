@@ -9,14 +9,24 @@ const RPC = process.env.SOLANA_RPC_URL || process.env.NEXT_PUBLIC_RPC_URL || 'ht
  */
 export async function getTokenUiBalance(wallet, mint) {
   const conn = new Connection(RPC, 'confirmed');
-  const accounts = await conn.getParsedTokenAccountsByOwner(new PublicKey(wallet), {
-    mint: new PublicKey(mint),
-  });
-  let total = 0;
-  for (const { account } of accounts.value) {
-    total += account.data?.parsed?.info?.tokenAmount?.uiAmount || 0;
+  const owner = new PublicKey(wallet);
+  const mintPk = new PublicKey(mint);
+  // Retry once on transient RPC errors so a single hiccup doesn't read as 0.
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const accounts = await conn.getParsedTokenAccountsByOwner(owner, { mint: mintPk });
+      let total = 0;
+      for (const { account } of accounts.value) {
+        total += account.data?.parsed?.info?.tokenAmount?.uiAmount || 0;
+      }
+      return total;
+    } catch (e) {
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 400));
+    }
   }
-  return total;
+  throw lastErr;
 }
 
 export const getBoomerangBalance = (wallet) => getTokenUiBalance(wallet, BOOMERANG_MINT);
