@@ -1,4 +1,4 @@
-import { listMissions, getCompletions, getClaimable } from '../../../lib/missionQueries';
+import { listMissions, getCompletions, getClaimable, touchUser, getTotalXp } from '../../../lib/missionQueries';
 import { getBoomerangBalance } from '../../../lib/solBalance';
 import { MIN_HOLD } from '../../../lib/missionConfig';
 
@@ -14,6 +14,9 @@ export async function GET(request) {
     let eligible = false;
     let completions = [];
     let claimable = [];
+    let totalXp = 0;
+    let missionsDone = 0;
+    let firstSeen = null;
     if (wallet) {
       try {
         balance = await getBoomerangBalance(wallet);
@@ -23,6 +26,10 @@ export async function GET(request) {
       eligible = balance !== null && balance >= MIN_HOLD;
       completions = await getCompletions(wallet);
       claimable = await getClaimable(wallet);
+      const xpStats = await getTotalXp(wallet);
+      totalXp = xpStats.xp;
+      missionsDone = xpStats.done;
+      firstSeen = await touchUser(wallet);
     }
     const statusByMission = Object.fromEntries(completions.map((c) => [c.mission_id, c.status]));
 
@@ -31,6 +38,10 @@ export async function GET(request) {
       wallet: wallet || null,
       boomerangBalance: balance,
       eligible,
+      totalXp,
+      missionsDone,
+      totalMissions: missions.length,
+      firstSeen,
       claimable: claimable.map((c) => ({ token: c.reward_token, amount: c.amount, count: c.n })),
       missions: missions.map((m) => ({
         id: m.id,
@@ -39,6 +50,7 @@ export async function GET(request) {
         description: m.description,
         type: m.type,
         params: m.params,
+        xp: m.xp,
         rewardToken: m.reward_token,
         rewardAmount: m.reward_amount,
         budgetLeft: String(Number(m.total_budget) - Number(m.spent)),

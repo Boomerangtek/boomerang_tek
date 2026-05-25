@@ -6,9 +6,32 @@ export async function listMissions() {
   const sql = getSql();
   return await sql`
     SELECT id, slug, title, description, type, params, reward_token, reward_amount::text,
-           total_budget::text, spent::text, per_wallet_limit
+           total_budget::text, spent::text, per_wallet_limit, COALESCE(xp, 0) AS xp
     FROM missions WHERE active = true ORDER BY id ASC
   `;
+}
+
+/** Record/refresh a wallet's presence; returns first_seen for "member since". */
+export async function touchUser(wallet) {
+  const sql = getSql();
+  const [r] = await sql`
+    INSERT INTO mission_users (wallet, first_seen, last_seen)
+    VALUES (${wallet}, NOW(), NOW())
+    ON CONFLICT (wallet) DO UPDATE SET last_seen = NOW()
+    RETURNING first_seen
+  `;
+  return r?.first_seen || null;
+}
+
+/** Total XP a wallet has earned (sum of completed missions' XP). */
+export async function getTotalXp(wallet) {
+  const sql = getSql();
+  const [r] = await sql`
+    SELECT COALESCE(SUM(m.xp), 0)::int AS xp, COUNT(*)::int AS done
+    FROM mission_completions c JOIN missions m ON m.id = c.mission_id
+    WHERE c.wallet = ${wallet}
+  `;
+  return { xp: r?.xp || 0, done: r?.done || 0 };
 }
 
 export async function getCompletions(wallet) {

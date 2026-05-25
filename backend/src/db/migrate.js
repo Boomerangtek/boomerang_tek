@@ -163,6 +163,15 @@ async function migrate() {
       );
     `);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_mission_completions_wallet ON mission_completions(wallet, status);`);
+    await pool.query(`ALTER TABLE missions ADD COLUMN IF NOT EXISTS xp INTEGER DEFAULT 0;`);
+    // Track when a wallet first appeared (for "member since" / holding streak).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS mission_users (
+        wallet VARCHAR(44) PRIMARY KEY,
+        first_seen TIMESTAMP DEFAULT NOW(),
+        last_seen TIMESTAMP DEFAULT NOW()
+      );
+    `);
 
     // Seed starter on-chain missions (rewards in SOL, lamports). Idempotent.
     const SOL = 'So11111111111111111111111111111111111111112';
@@ -184,7 +193,15 @@ async function migrate() {
         [slug, title, description, type, JSON.stringify(params), SOL, reward, budget]
       );
     }
-    console.log('✅ Ensured missions tables + seeded starter missions');
+    // XP per mission (idempotent — updates existing rows too).
+    const xpBySlug = {
+      'holder-100k': 50, 'diamond-500k': 100, 'whale-1m': 200, 'mega-5m': 500,
+      'first-vote': 75, 'active-voter': 150, 'link-token': 200, 'troll-on': 120, 'vote-on': 120,
+    };
+    for (const [slug, xp] of Object.entries(xpBySlug)) {
+      await pool.query(`UPDATE missions SET xp = $1 WHERE slug = $2`, [xp, slug]);
+    }
+    console.log('✅ Ensured missions tables + seeded starter missions (with XP)');
 
     console.log('🎉 Migration completed successfully!');
     process.exit(0);
