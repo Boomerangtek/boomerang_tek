@@ -13,7 +13,7 @@ function rewardLabel(amount, token) {
   return `${new Intl.NumberFormat('en-US', { notation: 'compact' }).format(Number(amount))} tokens`;
 }
 
-const ICONS = { hold: '💎', vote: '🗳️', customer: '🤝' };
+const ICONS = { hold: '💎', vote: '🗳️', vote_count: '🔥', customer: '🤝', troll_mode: '🎲', vote_mode: '🗳️' };
 
 export default function MissionsDashboard() {
   const { publicKey, signMessage, connected } = useWallet();

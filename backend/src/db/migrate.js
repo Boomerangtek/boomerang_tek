@@ -167,9 +167,15 @@ async function migrate() {
     // Seed starter on-chain missions (rewards in SOL, lamports). Idempotent.
     const SOL = 'So11111111111111111111111111111111111111112';
     const seed = [
+      ['holder-100k', 'Holder', 'Hold at least 100,000 $Boomerang.', 'hold', { minAmount: 100000 }, 3_000_000, 1_000_000_000],
       ['diamond-500k', 'Diamond hands', 'Hold at least 500,000 $Boomerang.', 'hold', { minAmount: 500000 }, 10_000_000, 1_000_000_000],
+      ['whale-1m', 'Whale', 'Hold at least 1,000,000 $Boomerang.', 'hold', { minAmount: 1000000 }, 30_000_000, 2_000_000_000],
+      ['mega-5m', 'Mega whale', 'Hold at least 5,000,000 $Boomerang.', 'hold', { minAmount: 5000000 }, 100_000_000, 3_000_000_000],
       ['first-vote', 'Cast your first vote', 'Vote in any Community Vote cycle.', 'vote', {}, 5_000_000, 1_000_000_000],
+      ['active-voter', 'Active voter', 'Vote in 3 different Community Vote cycles.', 'vote_count', { count: 3 }, 20_000_000, 1_000_000_000],
       ['link-token', 'Become a customer', 'Link one of your tokens to the Boomerang bot.', 'customer', {}, 20_000_000, 2_000_000_000],
+      ['troll-on', 'Embrace the chaos', 'Enable Troll Mode on one of your tokens.', 'troll_mode', {}, 15_000_000, 1_000_000_000],
+      ['vote-on', 'Power to the people', 'Enable Community Vote on one of your tokens.', 'vote_mode', {}, 15_000_000, 1_000_000_000],
     ];
     for (const [slug, title, description, type, params, reward, budget] of seed) {
       await pool.query(

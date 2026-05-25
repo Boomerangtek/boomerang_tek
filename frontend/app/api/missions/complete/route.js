@@ -1,4 +1,7 @@
-import { getMission, hasCompleted, recordCompletion, hasVoted, isCustomer } from '../../../../lib/missionQueries';
+import {
+  getMission, hasCompleted, recordCompletion,
+  hasVoted, isCustomer, getVoteCount, hasTrollMode, hasVoteMode,
+} from '../../../../lib/missionQueries';
 import { getBoomerangBalance } from '../../../../lib/solBalance';
 import { MIN_HOLD } from '../../../../lib/missionConfig';
 
@@ -38,6 +41,16 @@ export async function POST(request) {
     } else if (mission.type === 'customer') {
       ok = await isCustomer(wallet);
       reason = 'Link one of your tokens to the bot from this wallet first.';
+    } else if (mission.type === 'vote_count') {
+      const need = Number(mission.params?.count || 1);
+      ok = (await getVoteCount(wallet)) >= need;
+      reason = `Vote in ${need} different Community Vote cycles.`;
+    } else if (mission.type === 'troll_mode') {
+      ok = await hasTrollMode(wallet);
+      reason = 'Enable Troll Mode on one of your tokens first.';
+    } else if (mission.type === 'vote_mode') {
+      ok = await hasVoteMode(wallet);
+      reason = 'Enable Community Vote on one of your tokens first.';
     } else {
       return Response.json({ error: 'Unsupported mission type' }, { status: 400 });
     }

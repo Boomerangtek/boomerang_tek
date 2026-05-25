@@ -85,3 +85,28 @@ export async function isCustomer(wallet) {
   `;
   return Boolean(r);
 }
+
+/** Number of distinct vote cycles a wallet has voted in. */
+export async function getVoteCount(wallet) {
+  const sql = getSql();
+  const [r] = await sql`SELECT COUNT(DISTINCT cycle_id)::int AS n FROM votes WHERE voter_address = ${wallet}`;
+  return r?.n || 0;
+}
+
+/** Does the wallet run an active config with Troll Mode on? */
+export async function hasTrollMode(wallet) {
+  const sql = getSql();
+  const [r] = await sql`
+    SELECT 1 FROM bot_configs WHERE dev_wallet_public = ${wallet} AND is_active = true AND troll_mode = true LIMIT 1
+  `;
+  return Boolean(r);
+}
+
+/** Does the wallet run an active config with Community Vote on? */
+export async function hasVoteMode(wallet) {
+  const sql = getSql();
+  const [r] = await sql`
+    SELECT 1 FROM bot_configs WHERE dev_wallet_public = ${wallet} AND is_active = true AND vote_mode = true LIMIT 1
+  `;
+  return Boolean(r);
+}
